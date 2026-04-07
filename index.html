@@ -25,7 +25,8 @@
         .btn-red { background: #dc3545; color: white; padding: 8px 14px; font-size: 18px; }
         
         .item-lista { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: #fafbfc; border-radius: 8px; margin-bottom: 10px; }
-        .card-cli { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 8px; background: #fff; }
+        .card-cli { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 8px; background: #fff; position: relative; }
+        .info-end { font-size: 13px; color: #606770; margin: 5px 0; line-height: 1.4; }
         
         .barra-bg { background: #eee; height: 12px; border-radius: 6px; margin: 8px 0; overflow: hidden; }
         .barra-fill { background: #28a745; height: 100%; transition: 0.4s; width: 0%; }
@@ -33,7 +34,6 @@
         .total-card { background: #1c1e21; color: white; padding: 20px; border-radius: 10px; text-align: center; margin-top: 15px; }
         .total-valor { font-size: 32px; color: #44ff7e; display: block; font-weight: bold; }
         
-        /* Estilo para os inputs de estoque */
         .input-estoque { width: 60px !important; text-align: center; font-size: 20px !important; font-weight: bold; margin: 0 5px !important; padding: 5px !important; border: 1px solid #bbb !important; }
 
         .sync-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
@@ -76,6 +76,8 @@
         <div class="form-box no-print">
             <strong>Novo Cliente:</strong>
             <input type="text" id="c_nome" placeholder="Nome do Cliente">
+            <input type="text" id="c_end" placeholder="Endereço (Rua, Número, Bairro)">
+            <input type="text" id="c_ref" placeholder="Referência (Perto de onde?)">
             <select id="c_select"></select>
             <button class="btn-green" style="background:#17a2b8" onclick="addC()">CADASTRAR CLIENTE</button>
         </div>
@@ -122,7 +124,7 @@
 
     <div class="no-print" style="margin-top: 20px; text-align: center;">
         <button onclick="window.print()" style="width:100%; padding:12px; background:#000; color:#fff; margin-bottom:15px; border-radius: 6px;">📄 GERAR RELATÓRIO PDF</button>
-        <button onclick="resetarCaixa()" style="color:red; background:none; font-size:12px; text-decoration:underline;">Zerar Caixa e Vendas (Mantém Estoque e Clientes)</button>
+        <button onclick="resetarCaixa()" style="color:red; background:none; font-size:12px; text-decoration:underline;">Zerar Caixa e Vendas</button>
     </div>
 </div>
 
@@ -148,10 +150,8 @@
         d.p.forEach((i, idx) => {
             if (i.cheios === undefined) i.cheios = 0;
             let qtLoja = i.vendas || 0;
-            let qtEnt = i.entregas || 0;
             somaLoja += (qtLoja * i.pl);
-            lp.innerHTML += `
-            <div class="item-lista">
+            lp.innerHTML += `<div class="item-lista">
                 <div><b>${i.n}</b><br><small>Loja: R$ ${i.pl.toFixed(2)} | Ent: R$ ${i.pe.toFixed(2)}</small></div>
                 <div style="text-align: right;">
                     <span style="font-size:18px; font-weight:bold;">${qtLoja}</span>
@@ -163,7 +163,7 @@
 
         // SELECT
         const sel = document.getElementById('c_select');
-        sel.innerHTML = '<option value="">Selecione a água...</option>';
+        sel.innerHTML = '<option value="">Selecione a água do cliente...</option>';
         d.p.forEach((i, idx) => { sel.innerHTML += `<option value="${idx}">${i.n}</option>`; });
 
         // CLIENTES
@@ -174,8 +174,13 @@
             let b = i.pts >= 10;
             lc.innerHTML += `<div class="card-cli">
                 <b>${i.n}</b> - <small>${prod ? prod.n : '?'}</small>
+                <div class="info-end">
+                    📍 ${i.end || 'Endereço não informado'}<br>
+                    🔍 <i>Ref: ${i.ref || 'Nenhuma'}</i>
+                </div>
                 <div class="barra-bg"><div class="barra-fill" style="width:${(i.pts/10)*100}%"></div></div>
                 <button class="btn-green ${b ? 'brinde-ativo' : ''}" style="width:100%" onclick="vE(${idx})">${b ? '🎁 BRINDE!' : '+1 ENTREGA'}</button>
+                <button onclick="delC(${idx})" style="background:none; color:red; font-size:10px; text-decoration:underline; width:100%; margin-top:5px;">Remover Cliente</button>
             </div>`;
         });
 
@@ -183,15 +188,13 @@
         const listaEstoque = document.getElementById('lista_estoque_cheios');
         listaEstoque.innerHTML = '';
         let totalCheiosGeral = 0;
-
         d.p.forEach((i, idx) => {
-            totalCheiosGeral += i.cheios;
-            listaEstoque.innerHTML += `
-            <div class="item-lista">
+            totalCheiosGeral += (i.cheios || 0);
+            listaEstoque.innerHTML += `<div class="item-lista">
                 <b>${i.n}</b>
                 <div style="display: flex; align-items: center;">
                     <button class="btn-red" onclick="mudaCheio(${idx}, -1)">-</button>
-                    <input type="number" class="input-estoque" value="${i.cheios}" onchange="digitaCheio(${idx}, this.value)">
+                    <input type="number" class="input-estoque" value="${i.cheios || 0}" onchange="digitaCheio(${idx}, this.value)">
                     <button class="btn-blue" onclick="mudaCheio(${idx}, 1)">+</button>
                 </div>
             </div>`;
@@ -209,15 +212,21 @@
         if(n && !isNaN(l) && !isNaN(e)) {
             d.p.push({n:n, pl:l, pe:e, vendas:0, entregas:0, cheios: 0});
             render();
+            document.getElementById('p_nome').value = '';
         }
     }
 
     function addC() {
         let n = document.getElementById('c_nome').value;
+        let ed = document.getElementById('c_end').value;
+        let rf = document.getElementById('c_ref').value;
         let s = document.getElementById('c_select').value;
         if(n && s !== "") {
-            d.c.push({n:n, pi:parseInt(s), pts:0});
+            d.c.push({n:n, end:ed, ref:rf, pi:parseInt(s), pts:0});
             render();
+            document.getElementById('c_nome').value = '';
+            document.getElementById('c_end').value = '';
+            document.getElementById('c_ref').value = '';
         }
     }
 
@@ -230,30 +239,14 @@
         render();
     }
 
-    // NOVAS FUNÇÕES PARA DIGITAR NO ESTOQUE
-    function mudaCheio(idx, qtd) { if(d.p[idx].cheios + qtd >= 0) { d.p[idx].cheios += qtd; render(); } }
-    function digitaCheio(idx, valor) {
-        let n = parseInt(valor);
-        if(!isNaN(n) && n >= 0) { d.p[idx].cheios = n; render(); }
-    }
-    
+    function delC(idx) { if(confirm("Apagar este cliente?")) { d.c.splice(idx, 1); render(); } }
+    function mudaCheio(idx, qtd) { if((d.p[idx].cheios || 0) + qtd >= 0) { d.p[idx].cheios = (d.p[idx].cheios || 0) + qtd; render(); } }
+    function digitaCheio(idx, valor) { let n = parseInt(valor); if(!isNaN(n) && n >= 0) { d.p[idx].cheios = n; render(); } }
     function mudaEstGeral(tipo, qtd) { if(d.est[tipo] + qtd >= 0) { d.est[tipo] += qtd; render(); } }
-    function digitaEstGeral(tipo, valor) {
-        let n = parseInt(valor);
-        if(!isNaN(n) && n >= 0) { d.est[tipo] = n; render(); }
-    }
-
+    function digitaEstGeral(tipo, valor) { let n = parseInt(valor); if(!isNaN(n) && n >= 0) { d.est[tipo] = n; render(); } }
     function resetarCaixa() { if(confirm("Zerar as vendas de hoje?")) { d.p.forEach(x => { x.vendas = 0; x.entregas = 0; }); d.cx = 0; render(); } }
-    function exportar() {
-        const b = new Blob([JSON.stringify(d)], {type:'text/plain'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(b); a.download = 'backup_agua.txt'; a.click();
-    }
-    function importar(input) {
-        const r = new FileReader();
-        r.onload = function() { d = JSON.parse(r.result); render(); };
-        r.readAsText(input.files[0]);
-    }
+    function exportar() { const b = new Blob([JSON.stringify(d)], {type:'text/plain'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'backup_agua.txt'; a.click(); }
+    function importar(input) { const r = new FileReader(); r.onload = function() { d = JSON.parse(r.result); render(); }; r.readAsText(input.files[0]); }
 
     render();
 </script>
