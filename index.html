@@ -2,65 +2,199 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão Completa</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Água do Amigo - v2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 10px; background: #f4f4f4; }
-        .box { background: white; max-width: 450px; margin: auto; padding: 15px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #007bff; margin-top: 0; }
-        .abas { display: flex; margin-bottom: 15px; }
-        .aba { flex: 1; padding: 10px; border: 1px solid #007bff; background: white; cursor: pointer; font-weight: bold; text-align: center; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 10px; background: #f0f2f5; color: #1c1e21; }
+        .container { background: #fff; max-width: 450px; margin: auto; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        h1 { text-align: center; color: #007bff; margin-bottom: 20px; font-size: 24px; }
+        
+        .abas { display: flex; background: #eee; border-radius: 8px; padding: 4px; margin-bottom: 20px; }
+        .aba { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 14px; transition: 0.2s; }
         .aba.active { background: #007bff; color: white; }
-        .painel { display: none; }
-        .painel.active { display: block; }
-        .form { background: #eee; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
-        input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
-        button { cursor: pointer; font-weight: bold; border: none; border-radius: 4px; }
-        .btn-add { width: 100%; padding: 12px; background: #28a745; color: white; }
-        .linha { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #ddd; }
-        .btn-v { background: #007bff; color: white; padding: 8px 12px; }
-        .card-c { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; background: #fafafa; }
-        .bar-bg { background: #ddd; height: 10px; border-radius: 5px; margin: 5px 0; }
-        .bar-fill { background: #28a745; height: 100%; border-radius: 5px; width: 0%; transition: 0.3s; }
-        .btn-f { width: 100%; padding: 12px; background: #28a745; color: white; }
-        .brinde { background: #ffc107; color: black; animation: blink 1s infinite; }
-        .total-box { background: #333; color: white; text-align: center; padding: 15px; margin-top: 20px; border-radius: 5px; }
-        .valor { font-size: 24px; color: #44ff7e; display: block; font-weight: bold; }
-        .sync-area { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .btn-sync { padding: 10px; background: #17a2b8; color: white; font-size: 12px; }
-        @keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.7;} 100% {opacity: 1;} }
+        
+        .secao { display: none; }
+        .secao.active { display: block; }
+
+        .form-box { background: #f8f9fa; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        
+        button { cursor: pointer; border: none; border-radius: 6px; font-weight: bold; }
+        .btn-green { width: 100%; padding: 14px; background: #28a745; color: white; font-size: 16px; }
+        .btn-blue { background: #007bff; color: white; padding: 10px 16px; }
+        
+        .item-lista { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
+        .card-cli { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 8px; background: #fff; }
+        
+        .barra-bg { background: #eee; height: 12px; border-radius: 6px; margin: 8px 0; overflow: hidden; }
+        .barra-fill { background: #28a745; height: 100%; transition: 0.4s; width: 0%; }
+        
+        .total-card { background: #1c1e21; color: white; padding: 20px; border-radius: 10px; text-align: center; margin-top: 20px; }
+        .total-valor { font-size: 32px; color: #44ff7e; display: block; font-weight: bold; }
+        
+        .sync-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .btn-sync { padding: 12px; background: #6c757d; color: white; font-size: 13px; }
+        .brinde-ativo { background: #ffc107 !important; color: #000 !important; animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
         @media print { .no-print { display: none !important; } }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h1>Água do Amigo</h1>
+<div class="container">
+    <h1>💧 Água do Amigo</h1>
 
     <div class="abas no-print">
-        <div class="aba active" onclick="guia('v', this)">LOJA</div>
-        <div class="aba" onclick="guia('f', this)">ENTREGA</div>
+        <div class="aba active" onclick="trocar('v', this)">BALCÃO / LOJA</div>
+        <div class="aba" onclick="trocar('f', this)">ENTREGAS</div>
     </div>
 
-    <div id="v" class="painel active">
-        <div class="form no-print">
-            <input type="text" id="pn" placeholder="Nome do Produto">
-            <input type="text" id="pl" placeholder="Preço Loja (ex: 8,00)">
-            <input type="text" id="pe" placeholder="Preço Entrega (ex: 12,00)">
-            <button class="btn-add" onclick="addP()">SALVAR PRODUTO</button>
+    <div id="v" class="secao active">
+        <div class="form-box no-print">
+            <strong>Cadastrar Produto:</strong>
+            <input type="text" id="p_nome" placeholder="Produto (Ex: Galão 20L)">
+            <input type="text" id="p_loja" placeholder="Preço Loja (Ex: 9.00)">
+            <input type="text" id="p_ent" placeholder="Preço Entrega (Ex: 13.00)">
+            <button class="btn-green" onclick="addP()">SALVAR NOVO PRODUTO</button>
         </div>
-        <div id="lista-p"></div>
+        <div id="lista_p"></div>
     </div>
 
-    <div id="f" class="painel">
-        <div class="form no-print">
-            <input type="text" id="cn" placeholder="Nome do Cliente">
-            <select id="cs"></select>
-            <button class="btn-add" onclick="addC()">CADASTRAR CLIENTE</button>
+    <div id="f" class="secao">
+        <div class="form-box no-print">
+            <strong>Novo Cliente:</strong>
+            <input type="text" id="c_nome" placeholder="Nome do Cliente">
+            <select id="c_select"></select>
+            <button class="btn-green" style="background:#17a2b8" onclick="addC()">CADASTRAR CLIENTE</button>
         </div>
-        <div id="lista-c"></div>
+        <div id="lista_c"></div>
     </div>
 
-    <div class="total-box">
-        CAIXA TOTAL DO DIA
-        <span class="valor" id="res-total">R$ 0,00</span>
+    <div class="total-card">
+        VALOR TOTAL DO DIA
+        <span class="total-valor" id="res_total">R$ 0,00</span>
+    </div>
+
+    <div class="sync-row no-print">
+        <button class="btn-sync" onclick="exportar()">📤 EXPORTAR (CELULAR)</button>
+        <button class="btn-sync" onclick="document.getElementById('f_imp').click()">📥 IMPORTAR (PC)</button>
+        <input type="file" id="f_imp" style="display:none" onchange="importar(this)">
+    </div>
+
+    <div class="no-print" style="margin-top: 20px; text-align: center;">
+        <button onclick="window.print()" style="width:100%; padding:12px; background:#000; color:#fff; margin-bottom:10px;">📄 GERAR RELATÓRIO PDF</button>
+        <button onclick="resetarCaixa()" style="color:red; background:none; font-size:12px; text-decoration:underline;">Zerar Caixa (Mantém Clientes)</button>
+    </div>
+</div>
+
+<script>
+    // Banco de dados blindado
+    let d = JSON.parse(localStorage.getItem('AGUA_DATA_FINAL')) || { p: [], c: [], cx: 0 };
+
+    function trocar(id, el) {
+        document.querySelectorAll('.secao').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.aba').forEach(a => a.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        el.classList.add('active');
+        render();
+    }
+
+    function render() {
+        localStorage.setItem('AGUA_DATA_FINAL', JSON.stringify(d));
+
+        // Produtos
+        const lp = document.getElementById('lista_p');
+        lp.innerHTML = '';
+        let somaLoja = 0;
+        d.p.forEach((i, idx) => {
+            somaLoja += (i.vendas * i.pl);
+            lp.innerHTML += `<div class="item-lista">
+                <span><b>${i.n}</b><br><small>Loja: R$ ${i.pl.toFixed(2)}</small></span>
+                <span>
+                    <span style="font-size:18px; margin-right:10px;">${i.vendas}</span>
+                    <button class="btn-blue" onclick="vL(${idx})">+1</button>
+                    <button onclick="delP(${idx})" style="color:red; background:none; margin-left:8px;">X</button>
+                </span>
+            </div>`;
+        });
+
+        // Select
+        const sel = document.getElementById('c_select');
+        sel.innerHTML = '<option value="">Selecione a água...</option>';
+        d.p.forEach((i, idx) => { sel.innerHTML += `<option value="${idx}">${i.n}</option>`; });
+
+        // Clientes
+        const lc = document.getElementById('lista_c');
+        lc.innerHTML = '';
+        d.c.forEach((i, idx) => {
+            let prod = d.p[i.pi];
+            let b = i.pts >= 10;
+            lc.innerHTML += `<div class="card-cli">
+                <b>${i.n}</b> - <small>${prod ? prod.n : '?'}</small>
+                <div class="barra-bg"><div class="barra-fill" style="width:${(i.pts/10)*100}%"></div></div>
+                <button class="btn-green ${b ? 'brinde-ativo' : ''}" style="width:100%" onclick="vE(${idx})">
+                    ${b ? '🎁 ENTREGAR BRINDE!' : '+1 ENTREGA (R$ ' + (prod ? prod.pe.toFixed(2) : '0') + ')'}
+                </button>
+                <button onclick="delC(${idx})" style="width:100%; background:none; color:red; margin-top:8px; font-size:11px;">Remover Cliente</button>
+            </div>`;
+        });
+
+        document.getElementById('res_total').innerText = "R$ " + (somaLoja + d.cx).toFixed(2).replace('.', ',');
+    }
+
+    function addP() {
+        let n = document.getElementById('p_nome').value;
+        let l = parseFloat(document.getElementById('p_loja').value.replace(',','.'));
+        let e = parseFloat(document.getElementById('p_ent').value.replace(',','.'));
+        if(n && !isNaN(l) && !isNaN(e)) {
+            d.p.push({n:n, pl:l, pe:e, vendas:0});
+            document.getElementById('p_nome').value=''; document.getElementById('p_loja').value=''; document.getElementById('p_ent').value='';
+            render();
+        } else { alert("Preencha os valores corretamente!"); }
+    }
+
+    function addC() {
+        let n = document.getElementById('c_nome').value;
+        let s = document.getElementById('c_select').value;
+        if(n && s !== "") {
+            d.c.push({n:n, pi:parseInt(s), pts:0});
+            document.getElementById('c_nome').value='';
+            render();
+        }
+    }
+
+    function vL(idx) { d.p[idx].vendas++; render(); }
+    
+    function vE(idx) {
+        let cli = d.c[idx];
+        let prod = d.p[cli.pi];
+        if(cli.pts >= 10) {
+            if(confirm("Deseja zerar os pontos do brinde?")) cli.pts = 0;
+        } else {
+            cli.pts++;
+            if(prod) d.cx += prod.pe;
+        }
+        render();
+    }
+
+    function delP(i) { if(confirm("Apagar?")) { d.p.splice(i,1); render(); } }
+    function delC(i) { if(confirm("Apagar?")) { d.c.splice(i,1); render(); } }
+    function resetarCaixa() { if(confirm("Zerar vendas de hoje?")) { d.p.forEach(x => x.vendas = 0); d.cx = 0; render(); } }
+
+    function exportar() {
+        const b = new Blob([JSON.stringify(d)], {type:'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(b); a.download = 'backup_agua.txt'; a.click();
+    }
+
+    function importar(input) {
+        const r = new FileReader();
+        r.onload = function() { d = JSON.parse(r.result); render(); alert("Importado!"); };
+        r.readAsText(input.files[0]);
+    }
+
+    render();
+</script>
+</body>
+</html>
