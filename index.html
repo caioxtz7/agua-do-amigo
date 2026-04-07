@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - v1.0</title>
+    <title>Água do Amigo - Gestão Completa</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: sans-serif; margin: 0; padding: 10px; background: #f4f4f4; }
@@ -14,18 +14,22 @@
         .painel { display: none; }
         .painel.active { display: block; }
         .form { background: #eee; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
-        input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { cursor: pointer; font-weight: bold; }
-        .btn-add { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; }
+        input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        button { cursor: pointer; font-weight: bold; border: none; border-radius: 4px; }
+        .btn-add { width: 100%; padding: 12px; background: #28a745; color: white; }
         .linha { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #ddd; }
-        .btn-v { background: #007bff; color: white; border: none; padding: 8px 12px; border-radius: 4px; }
-        .card-c { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        .btn-v { background: #007bff; color: white; padding: 8px 12px; }
+        .card-c { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; background: #fafafa; }
         .bar-bg { background: #ddd; height: 10px; border-radius: 5px; margin: 5px 0; }
-        .bar-fill { background: #28a745; height: 100%; border-radius: 5px; width: 0%; }
-        .btn-f { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; }
-        .brinde { background: #ffc107; color: black; }
+        .bar-fill { background: #28a745; height: 100%; border-radius: 5px; width: 0%; transition: 0.3s; }
+        .btn-f { width: 100%; padding: 12px; background: #28a745; color: white; }
+        .brinde { background: #ffc107; color: black; animation: blink 1s infinite; }
         .total-box { background: #333; color: white; text-align: center; padding: 15px; margin-top: 20px; border-radius: 5px; }
-        .valor { font-size: 24px; color: #44ff7e; display: block; }
+        .valor { font-size: 24px; color: #44ff7e; display: block; font-weight: bold; }
+        .sync-area { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .btn-sync { padding: 10px; background: #17a2b8; color: white; font-size: 12px; }
+        @keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.7;} 100% {opacity: 1;} }
+        @media print { .no-print { display: none !important; } }
     </style>
 </head>
 <body>
@@ -33,13 +37,13 @@
 <div class="box">
     <h1>Água do Amigo</h1>
 
-    <div class="abas">
+    <div class="abas no-print">
         <div class="aba active" onclick="guia('v', this)">LOJA</div>
         <div class="aba" onclick="guia('f', this)">ENTREGA</div>
     </div>
 
     <div id="v" class="painel active">
-        <div class="form">
+        <div class="form no-print">
             <input type="text" id="pn" placeholder="Nome do Produto">
             <input type="text" id="pl" placeholder="Preço Loja (ex: 8,00)">
             <input type="text" id="pe" placeholder="Preço Entrega (ex: 12,00)">
@@ -49,7 +53,7 @@
     </div>
 
     <div id="f" class="painel">
-        <div class="form">
+        <div class="form no-print">
             <input type="text" id="cn" placeholder="Nome do Cliente">
             <select id="cs"></select>
             <button class="btn-add" onclick="addC()">CADASTRAR CLIENTE</button>
@@ -60,6 +64,3 @@
     <div class="total-box">
         CAIXA TOTAL DO DIA
         <span class="valor" id="res-total">R$ 0,00</span>
-    </div>
-
-    <button onclick="zerar()" style="width:100%; margin-top:15px; border:none; background:none; color:red; cursor:pointer;">Lim
