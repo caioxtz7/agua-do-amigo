@@ -2,171 +2,107 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão & Fidelidade</title>
+    <title>Água do Amigo - Gestão Total</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; margin: 0; padding: 10px; display: flex; justify-content: center; }
-        .card { background: white; width: 100%; max-width: 500px; padding: 15px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
-        h1 { color: #007bff; text-align: center; margin-bottom: 5px; }
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
-        .tab-btn { flex: 1; padding: 10px; border: none; background: #ddd; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .tab-btn.active { background: #007bff; color: white; }
+        body { font-family: sans-serif; background: #f0f4f8; margin: 0; padding: 10px; display: flex; justify-content: center; }
+        .container { background: white; width: 100%; max-width: 480px; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #007bff; text-align: center; margin-top: 0; font-size: 22px; }
         
-        .section { display: none; }
-        .section.active { display: block; }
-
-        /* Estilo da Fidelidade */
-        .cliente-item { background: #f8f9fa; padding: 12px; border-radius: 10px; margin-bottom: 8px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .progress-bg { background: #e9ecef; height: 8px; width: 100%; border-radius: 5px; margin-top: 5px; }
-        .progress-bar { background: #28a745; height: 100%; border-radius: 5px; transition: 0.3s; }
-        .btn-carimbo { background: #007bff; color: white; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; }
-        .ganhou-brinde { background: #ffc107 !important; color: #000 !important; animation: pulse 1s infinite; }
+        .tabs { display: flex; margin-bottom: 15px; border: 1px solid #007bff; border-radius: 8px; overflow: hidden; }
+        .tab { flex: 1; padding: 12px; border: none; background: white; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .tab.active { background: #007bff; color: white; }
         
-        @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.05);} 100% {transform: scale(1);} }
+        .painel { display: none; }
+        .painel.active { display: block; }
 
-        /* Estilos de Venda (Igual anterior) */
-        .item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; align-items: center; }
-        .btn-vender { background: #007bff; color: white; padding: 10px 15px; border:none; border-radius: 5px; }
-        .resumo { background: #343a40; color: white; padding: 15px; border-radius: 10px; text-align: center; margin-top: 15px; }
-        .total-valor { font-size: 24px; color: #44ff7e; display: block; }
-        input { width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        .add-box { background: #eef2f7; padding: 12px; border-radius: 10px; margin-bottom: 15px; }
+        input, select { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 15px; }
+        button { cursor: pointer; border-radius: 5px; font-weight: bold; border: none; transition: 0.2s; }
         
-        .btn-sync { background: #17a2b8; color: white; width: 100%; padding: 12px; border:none; border-radius: 5px; margin-top: 10px; font-weight: bold; }
+        .btn-add { background: #28a745; color: white; width: 100%; padding: 12px; }
+        .linha { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
+        .btn-venda { background: #007bff; color: white; padding: 10px; min-width: 80px; }
+        
+        .cliente-card { background: #f8f9fa; padding: 12px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid #28a745; }
+        .progresso { background: #ddd; height: 12px; border-radius: 6px; margin: 10px 0; overflow: hidden; }
+        .barra { background: #28a745; height: 100%; width: 0%; transition: 0.4s; }
+        
+        .btn-fidelidade { background: #28a745; color: white; width: 100%; padding: 12px; font-size: 15px; }
+        .brinde { background: #ffc107; color: black; animation: blink 1s infinite; font-size: 16px; }
 
+        .footer { background: #333; color: white; padding: 15px; border-radius: 10px; text-align: center; margin-top: 20px; }
+        .total { font-size: 28px; color: #44ff7e; display: block; font-weight: bold; }
+        
+        @keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.6;} 100% {opacity: 1;} }
         @media print { .no-print { display: none !important; } }
     </style>
 </head>
 <body>
 
-<div class="card">
+<div class="container">
     <h1>💧 Água do Amigo</h1>
-    
+
     <div class="tabs no-print">
-        <button class="tab-btn active" onclick="openTab('vendas')">VENDAS</button>
-        <button class="tab-btn" onclick="openTab('fidelidade')">FIDELIDADE (10+1)</button>
+        <button class="tab active" onclick="mudarAba('vendas', this)">VENDAS LOJA</button>
+        <button class="tab" onclick="mudarAba('fidelidade', this)">ENTREGA (FIDELIDADE)</button>
     </div>
 
-    <div id="vendas" class="section active">
-        <div class="no-print" style="background:#f0f4f8; padding:10px; border-radius:10px; margin-bottom:10px;">
-            <input type="text" id="n-prod" placeholder="Produto">
-            <input type="text" id="n-preco" placeholder="Preço (Ex: 10,00)">
-            <button onclick="addProd()" style="width:100%; padding:10px; background:#28a745; color:white; border:none; border-radius:5px; font-weight:bold;">+ CADASTRAR</button>
+    <div id="vendas" class="painel active">
+        <div class="add-box no-print">
+            <strong>Cadastrar Produto:</strong>
+            <input type="text" id="p-nome" placeholder="Ex: Galão 20L">
+            <input type="text" id="p-preco-loja" placeholder="Preço na Loja (Ex: 8,00)">
+            <input type="text" id="p-preco-entrega" placeholder="Preço Entrega (Ex: 12,00)">
+            <button class="btn-add" onclick="novoProduto()">+ SALVAR PRODUTO</button>
         </div>
-        <div id="lista-vendas"></div>
-        <div class="resumo">TOTAL: <span class="total-valor" id="total-geral">R$ 0,00</span></div>
+        <div id="lista-produtos"></div>
     </div>
 
-    <div id="fidelidade" class="section">
-        <div class="no-print">
-            <input type="text" id="n-cliente" placeholder="Nome do Cliente">
-            <button onclick="addCliente()" style="width:100%; padding:10px; background:#28a745; color:white; border:none; border-radius:5px; font-weight:bold;">CADASTRAR CLIENTE</button>
+    <div id="fidelidade" class="painel">
+        <div class="add-box no-print">
+            <strong>Novo Cliente:</strong>
+            <input type="text" id="c-nome" placeholder="Nome do Cliente">
+            <select id="c-tipo-agua">
+                <option value="">Selecione a água que ele compra...</option>
+            </select>
+            <button class="btn-add" style="background:#17a2b8" onclick="novoCliente()">+ CADASTRAR CLIENTE</button>
         </div>
-        <div id="lista-clientes" style="margin-top:15px;"></div>
+        <div id="lista-clientes"></div>
     </div>
 
-    <div class="no-print">
-        <button class="btn-sync" onclick="exportar()">📤 Celular > PC (Exportar)</button>
-        <button class="btn-sync" style="background:#6c757d" onclick="document.getElementById('fin').click()">📥 Importar no PC</button>
-        <input type="file" id="fin" style="display:none" onchange="importar(this)">
-        <button onclick="window.print()" style="width:100%; padding:12px; margin-top:10px; border-radius:5px; border:1px solid #333; font-weight:bold;">📄 GERAR PDF</button>
-        <button onclick="zerarTudo()" style="width:100%; color:red; background:none; border:none; margin-top:15px; font-size:11px;">Limpar Tudo</button>
+    <div class="footer">
+        VALOR TOTAL DO DIA
+        <span class="total" id="valor-total">R$ 0,00</span>
+    </div>
+
+    <div class="no-print" style="margin-top:15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <button onclick="window.print()" style="padding:12px; background:#6c757d; color:white;">📄 PDF</button>
+        <button onclick="exportar()" style="padding:12px; background:#eee;">📤 Exportar</button>
+        <button onclick="zerarVendas()" style="grid-column: span 2; margin-top:10px; background:none; color:red; font-size:12px; border: 1px solid red; padding: 5px;">Zerar Apenas Vendas do Dia</button>
     </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('agua_db')) || [];
-    let clientes = JSON.parse(localStorage.getItem('agua_clientes')) || [];
+    let produtos = JSON.parse(localStorage.getItem('agua_v4_prod')) || [];
+    let clientes = JSON.parse(localStorage.getItem('agua_v4_cli')) || [];
+    let totalEntregasR$ = JSON.parse(localStorage.getItem('agua_v4_soma_entrega')) || 0;
 
-    function openTab(tabId) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        event.currentTarget.classList.add('active');
+    function mudarAba(id, btn) {
+        document.querySelectorAll('.painel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
     }
 
-    function render() {
-        // Render Vendas
-        const vDiv = document.getElementById('lista-vendas');
-        vDiv.innerHTML = '';
-        let total = 0;
-        db.forEach((p, i) => {
-            total += (p.vendas * p.preco);
-            vDiv.innerHTML += `<div class="item">
-                <span><b>${p.nome}</b><br><small>R$ ${p.preco.toFixed(2)}</small></span>
-                <div class="controles">
-                    <span style="font-size:18px; margin-right:10px;">${p.vendas}</span>
-                    <button class="btn-vender" onclick="vender(${i})">+1</button>
-                    <button onclick="removerProd(${i})" style="color:red; background:none; border:none; margin-left:10px;">X</button>
-                </div>
-            </div>`;
-        });
-        document.getElementById('total-geral').innerText = "R$ " + total.toFixed(2).replace('.',',');
-
-        // Render Fidelidade
-        const cDiv = document.getElementById('lista-clientes');
-        cDiv.innerHTML = '';
-        clientes.forEach((c, i) => {
-            let isBrinde = c.compras >= 10;
-            cDiv.innerHTML += `<div class="cliente-item">
-                <div style="flex:1; margin-right:10px;">
-                    <b>${c.nome}</b>
-                    <div class="progress-bg"><div class="progress-bar" style="width:${(c.compras/10)*100}%"></div></div>
-                    <small>${c.compras}/10 águas</small>
-                </div>
-                <button class="btn-carimbo ${isBrinde ? 'ganhou-brinde' : ''}" onclick="carimbar(${i})">
-                    ${isBrinde ? 'BRINDE! 🎁' : '+1 Água'}
-                </button>
-                <button onclick="removerCli(${i})" style="color:red; background:none; border:none; margin-left:5px;">X</button>
-            </div>`;
-        });
-
-        localStorage.setItem('agua_db', JSON.stringify(db));
-        localStorage.setItem('agua_clientes', JSON.stringify(clientes));
-    }
-
-    function addProd() {
-        let n = document.getElementById('n-prod').value;
-        let p = parseFloat(document.getElementById('n-preco').value.replace(',','.'));
-        if(n && p) { db.push({nome:n, preco:p, vendas:0}); render(); }
-    }
-    function vender(i) { db[i].vendas++; render(); }
-    function removerProd(i) { if(confirm("Excluir produto?")) {db.splice(i,1); render();} }
-
-    function addCliente() {
-        let n = document.getElementById('n-cliente').value;
-        if(n) { clientes.push({nome:n, compras:0}); document.getElementById('n-cliente').value=''; render(); }
-    }
-    function carimbar(i) {
-        if(clientes[i].compras >= 10) {
-            if(confirm("Entregar a água GRÁTIS e zerar o cartão?")) { clientes[i].compras = 0; }
-        } else { clientes[i].compras++; }
-        render();
-    }
-    function removerCli(i) { if(confirm("Excluir cliente?")) {clientes.splice(i,1); render();} }
-
-    function exportar() {
-        const blob = new Blob([JSON.stringify({db, clientes})], {type:"application/json"});
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "vendas_fidelidade.txt";
-        a.click();
-    }
-    function importar(input) {
-        const reader = new FileReader();
-        reader.onload = function() {
-            const data = JSON.parse(reader.result);
-            db = data.db; clientes = data.clientes;
-            render(); alert("Sincronizado!");
-        };
-        reader.readAsText(input.files[0]);
-    }
-    function zerarTudo() { if(confirm("Isso apaga TUDO (Produtos e Clientes). Tem certeza?")) { localStorage.clear(); location.reload(); } }
-
-    render();
-</script>
-</body>
-</html>
-    render();
-</script>
-</body>
-</html>
+    function atualizarTela() {
+        // Atualiza Lista de Vendas Loja
+        const listaP = document.getElementById('lista-produtos');
+        listaP.innerHTML = '';
+        let somaLoja = 0;
+        
+        produtos.forEach((p, i) => {
+            somaLoja += (p.vendas * p.precoLoja);
+            listaP.innerHTML += `
+                <div class="linha">
+                    <div><b>${p.nome}</b><br
