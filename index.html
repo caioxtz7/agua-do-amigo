@@ -2,40 +2,43 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - v2</title>
+    <title>Água do Amigo - Gestão 360º</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 10px; background: #f0f2f5; color: #1c1e21; }
-        .container { background: #fff; max-width: 450px; margin: auto; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        h1 { text-align: center; color: #007bff; margin-bottom: 20px; font-size: 24px; }
+        .container { background: #fff; max-width: 480px; margin: auto; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        h1 { text-align: center; color: #007bff; margin-bottom: 20px; font-size: 22px; }
         
-        .abas { display: flex; background: #eee; border-radius: 8px; padding: 4px; margin-bottom: 20px; }
-        .aba { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 14px; transition: 0.2s; }
+        .abas { display: flex; background: #eee; border-radius: 8px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .aba { flex: 1; padding: 10px 5px; text-align: center; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 13px; transition: 0.2s; white-space: nowrap; }
         .aba.active { background: #007bff; color: white; }
         
         .secao { display: none; }
         .secao.active { display: block; }
 
-        .form-box { background: #f8f9fa; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; }
+        .form-box { background: #f8f9fa; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; }
         input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
         
-        button { cursor: pointer; border: none; border-radius: 6px; font-weight: bold; }
-        .btn-green { width: 100%; padding: 14px; background: #28a745; color: white; font-size: 16px; }
-        .btn-blue { background: #007bff; color: white; padding: 10px 16px; }
+        button { cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: 0.2s; }
+        .btn-green { width: 100%; padding: 14px; background: #28a745; color: white; font-size: 15px; }
+        .btn-blue { background: #007bff; color: white; padding: 8px 14px; font-size: 18px; }
+        .btn-red { background: #dc3545; color: white; padding: 8px 14px; font-size: 18px; }
         
-        .item-lista { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
+        .item-lista { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: #fafbfc; border-radius: 8px; margin-bottom: 10px; }
         .card-cli { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 8px; background: #fff; }
         
         .barra-bg { background: #eee; height: 12px; border-radius: 6px; margin: 8px 0; overflow: hidden; }
         .barra-fill { background: #28a745; height: 100%; transition: 0.4s; width: 0%; }
         
-        .total-card { background: #1c1e21; color: white; padding: 20px; border-radius: 10px; text-align: center; margin-top: 20px; }
+        .total-card { background: #1c1e21; color: white; padding: 20px; border-radius: 10px; text-align: center; margin-top: 15px; }
         .total-valor { font-size: 32px; color: #44ff7e; display: block; font-weight: bold; }
         
         .sync-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
         .btn-sync { padding: 12px; background: #6c757d; color: white; font-size: 13px; }
         .brinde-ativo { background: #ffc107 !important; color: #000 !important; animation: pulse 1.5s infinite; }
         
+        .titulo-secao { font-size: 16px; color: #444; border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-bottom: 15px; margin-top: 5px; }
+
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
         @media print { .no-print { display: none !important; } }
     </style>
@@ -46,19 +49,24 @@
     <h1>💧 Água do Amigo</h1>
 
     <div class="abas no-print">
-        <div class="aba active" onclick="trocar('v', this)">BALCÃO / LOJA</div>
+        <div class="aba active" onclick="trocar('v', this)">LOJA</div>
         <div class="aba" onclick="trocar('f', this)">ENTREGAS</div>
+        <div class="aba" onclick="trocar('e', this)">📦 ESTOQUE</div>
     </div>
 
     <div id="v" class="secao active">
         <div class="form-box no-print">
-            <strong>Cadastrar Produto:</strong>
+            <strong>Cadastrar Novo Produto:</strong>
             <input type="text" id="p_nome" placeholder="Produto (Ex: Galão 20L)">
             <input type="text" id="p_loja" placeholder="Preço Loja (Ex: 9.00)">
             <input type="text" id="p_ent" placeholder="Preço Entrega (Ex: 13.00)">
-            <button class="btn-green" onclick="addP()">SALVAR NOVO PRODUTO</button>
+            <button class="btn-green" onclick="addP()">SALVAR PRODUTO</button>
         </div>
         <div id="lista_p"></div>
+        <div class="total-card">
+            VALOR TOTAL DO DIA
+            <span class="total-valor" id="res_total">R$ 0,00</span>
+        </div>
     </div>
 
     <div id="f" class="secao">
@@ -71,26 +79,55 @@
         <div id="lista_c"></div>
     </div>
 
-    <div class="total-card">
-        VALOR TOTAL DO DIA
-        <span class="total-valor" id="res_total">R$ 0,00</span>
+    <div id="e" class="secao">
+        <div class="form-box no-print" style="background: #fff;">
+            <h3 class="titulo-secao">Galões Cheios (Por Marca)</h3>
+            <div id="lista_estoque_cheios"></div>
+            
+            <h3 class="titulo-secao" style="margin-top:25px;">Retorno & Perdas</h3>
+            <div class="item-lista">
+                <b>Vazios (Geral)</b>
+                <div>
+                    <button class="btn-red" onclick="mudaEstGeral('vazios', -1)">-</button>
+                    <span style="font-size:20px; font-weight:bold; margin:0 12px; width: 30px; display: inline-block; text-align: center;" id="qtd_vazios">0</span>
+                    <button class="btn-blue" onclick="mudaEstGeral('vazios', 1)">+</button>
+                </div>
+            </div>
+            
+            <div class="item-lista">
+                <b>Quebrados / Furados</b>
+                <div>
+                    <button class="btn-red" onclick="mudaEstGeral('quebrados', -1)">-</button>
+                    <span style="font-size:20px; font-weight:bold; margin:0 12px; width: 30px; display: inline-block; text-align: center;" id="qtd_quebrados">0</span>
+                    <button class="btn-blue" onclick="mudaEstGeral('quebrados', 1)">+</button>
+                </div>
+            </div>
+
+            <div class="total-card" style="background:#0277bd; margin-top:20px;">
+                TOTAL GERAL DE CASCOS
+                <span class="total-valor" id="total_cascos" style="color:#fff;">0</span>
+                <small style="font-size: 11px; font-weight: normal;">(Soma de Cheios + Vazios + Quebrados)</small>
+            </div>
+        </div>
     </div>
 
     <div class="sync-row no-print">
-        <button class="btn-sync" onclick="exportar()">📤 EXPORTAR (CELULAR)</button>
-        <button class="btn-sync" onclick="document.getElementById('f_imp').click()">📥 IMPORTAR (PC)</button>
+        <button class="btn-sync" onclick="exportar()">📤 EXPORTAR DADOS</button>
+        <button class="btn-sync" onclick="document.getElementById('f_imp').click()">📥 IMPORTAR DADOS</button>
         <input type="file" id="f_imp" style="display:none" onchange="importar(this)">
     </div>
 
     <div class="no-print" style="margin-top: 20px; text-align: center;">
-        <button onclick="window.print()" style="width:100%; padding:12px; background:#000; color:#fff; margin-bottom:10px;">📄 GERAR RELATÓRIO PDF</button>
-        <button onclick="resetarCaixa()" style="color:red; background:none; font-size:12px; text-decoration:underline;">Zerar Caixa (Mantém Clientes)</button>
+        <button onclick="window.print()" style="width:100%; padding:12px; background:#000; color:#fff; margin-bottom:15px; border-radius: 6px;">📄 GERAR RELATÓRIO PDF</button>
+        <button onclick="resetarCaixa()" style="color:red; background:none; font-size:12px; text-decoration:underline;">Zerar Caixa e Vendas (Mantém Estoque e Clientes)</button>
     </div>
 </div>
 
 <script>
-    // Banco de dados blindado
+    // Banco de dados com Proteção
     let d = JSON.parse(localStorage.getItem('AGUA_DATA_FINAL')) || { p: [], c: [], cx: 0 };
+    // Garante que a estrutura de estoque exista mesmo para quem já tem dados salvos
+    if (!d.est) d.est = { vazios: 0, quebrados: 0 };
 
     function trocar(id, el) {
         document.querySelectorAll('.secao').forEach(s => s.classList.remove('active'));
@@ -103,52 +140,90 @@
     function render() {
         localStorage.setItem('AGUA_DATA_FINAL', JSON.stringify(d));
 
-        // Produtos
+        // ================= LOJA E VENDAS =================
         const lp = document.getElementById('lista_p');
         lp.innerHTML = '';
         let somaLoja = 0;
+        
         d.p.forEach((i, idx) => {
-            somaLoja += (i.vendas * i.pl);
-            lp.innerHTML += `<div class="item-lista">
-                <span><b>${i.n}</b><br><small>Loja: R$ ${i.pl.toFixed(2)}</small></span>
-                <span>
-                    <span style="font-size:18px; margin-right:10px;">${i.vendas}</span>
-                    <button class="btn-blue" onclick="vL(${idx})">+1</button>
-                    <button onclick="delP(${idx})" style="color:red; background:none; margin-left:8px;">X</button>
-                </span>
+            if (i.cheios === undefined) i.cheios = 0; // Garante variável de estoque
+            let qtLoja = i.vendas || 0;
+            let qtEnt = i.entregas || 0;
+            somaLoja += (qtLoja * i.pl);
+            
+            lp.innerHTML += `
+            <div class="item-lista">
+                <div>
+                    <b>${i.n}</b><br>
+                    <small>R$ ${i.pl.toFixed(2)} (Loja) | R$ ${i.pe.toFixed(2)} (Ent)</small><br>
+                    <span style="display:inline-block; margin-top:5px; background:#e1f5fe; color:#0277bd; padding:2px 6px; border-radius:4px; font-size:12px; font-weight:bold;">Saíram hoje: ${qtLoja + qtEnt}</span>
+                </div>
+                <div style="text-align: right;">
+                    <div style="margin-bottom: 6px;">
+                        <span style="font-size:12px; color:#555;">Balcão:</span> 
+                        <span style="font-size:18px; font-weight:bold; margin-right:5px;">${qtLoja}</span>
+                        <button class="btn-blue" style="padding: 4px 10px; font-size:14px;" onclick="vL(${idx})">+1</button>
+                    </div>
+                    <div style="font-size:12px; color:#d81b60; font-weight:bold;">Entregas hoje: <span style="font-size:15px;">${qtEnt}</span></div>
+                    <button onclick="delP(${idx})" style="color:red; background:none; font-size:11px; margin-top:8px;">Excluir Produto</button>
+                </div>
             </div>`;
         });
 
-        // Select
+        document.getElementById('res_total').innerText = "R$ " + (somaLoja + d.cx).toFixed(2).replace('.', ',');
+
+        // ================= CLIENTES E ENTREGAS =================
         const sel = document.getElementById('c_select');
         sel.innerHTML = '<option value="">Selecione a água...</option>';
         d.p.forEach((i, idx) => { sel.innerHTML += `<option value="${idx}">${i.n}</option>`; });
 
-        // Clientes
         const lc = document.getElementById('lista_c');
         lc.innerHTML = '';
         d.c.forEach((i, idx) => {
             let prod = d.p[i.pi];
             let b = i.pts >= 10;
             lc.innerHTML += `<div class="card-cli">
-                <b>${i.n}</b> - <small>${prod ? prod.n : '?'}</small>
+                <b>${i.n}</b> - <small>${prod ? prod.n : 'Produto Removido'}</small>
                 <div class="barra-bg"><div class="barra-fill" style="width:${(i.pts/10)*100}%"></div></div>
                 <button class="btn-green ${b ? 'brinde-ativo' : ''}" style="width:100%" onclick="vE(${idx})">
-                    ${b ? '🎁 ENTREGAR BRINDE!' : '+1 ENTREGA (R$ ' + (prod ? prod.pe.toFixed(2) : '0') + ')'}
+                    ${b ? '🎁 ENTREGAR BRINDE GRÁTIS!' : '+1 ENTREGA (R$ ' + (prod ? prod.pe.toFixed(2) : '0') + ')'}
                 </button>
                 <button onclick="delC(${idx})" style="width:100%; background:none; color:red; margin-top:8px; font-size:11px;">Remover Cliente</button>
             </div>`;
         });
 
-        document.getElementById('res_total').innerText = "R$ " + (somaLoja + d.cx).toFixed(2).replace('.', ',');
+        // ================= ESTOQUE FÍSICO =================
+        const listaEstoque = document.getElementById('lista_estoque_cheios');
+        listaEstoque.innerHTML = '';
+        let totalCheiosGeral = 0;
+
+        d.p.forEach((i, idx) => {
+            totalCheiosGeral += i.cheios;
+            listaEstoque.innerHTML += `
+            <div class="item-lista">
+                <b>${i.n}</b>
+                <div>
+                    <button class="btn-red" onclick="mudaCheio(${idx}, -1)">-</button>
+                    <span style="font-size:20px; font-weight:bold; margin:0 12px; width: 30px; display: inline-block; text-align: center;">${i.cheios}</span>
+                    <button class="btn-blue" onclick="mudaCheio(${idx}, 1)">+</button>
+                </div>
+            </div>`;
+        });
+
+        document.getElementById('qtd_vazios').innerText = d.est.vazios;
+        document.getElementById('qtd_quebrados').innerText = d.est.quebrados;
+        
+        let totalCascos = totalCheiosGeral + d.est.vazios + d.est.quebrados;
+        document.getElementById('total_cascos').innerText = totalCascos;
     }
 
+    // ================= FUNÇÕES DE AÇÃO =================
     function addP() {
         let n = document.getElementById('p_nome').value;
         let l = parseFloat(document.getElementById('p_loja').value.replace(',','.'));
         let e = parseFloat(document.getElementById('p_ent').value.replace(',','.'));
         if(n && !isNaN(l) && !isNaN(e)) {
-            d.p.push({n:n, pl:l, pe:e, vendas:0});
+            d.p.push({n:n, pl:l, pe:e, vendas:0, entregas:0, cheios: 0});
             document.getElementById('p_nome').value=''; document.getElementById('p_loja').value=''; document.getElementById('p_ent').value='';
             render();
         } else { alert("Preencha os valores corretamente!"); }
@@ -164,33 +239,55 @@
         }
     }
 
-    function vL(idx) { d.p[idx].vendas++; render(); }
+    function vL(idx) { d.p[idx].vendas = (d.p[idx].vendas || 0) + 1; render(); }
     
     function vE(idx) {
         let cli = d.c[idx];
         let prod = d.p[cli.pi];
         if(cli.pts >= 10) {
-            if(confirm("Deseja zerar os pontos do brinde?")) cli.pts = 0;
+            if(confirm("Entregar a água de brinde e zerar o cartão do cliente?")) {
+                cli.pts = 0;
+                if(prod) prod.entregas = (prod.entregas || 0) + 1;
+            }
         } else {
             cli.pts++;
-            if(prod) d.cx += prod.pe;
+            if(prod) {
+                d.cx += prod.pe;
+                prod.entregas = (prod.entregas || 0) + 1;
+            }
         }
         render();
     }
 
-    function delP(i) { if(confirm("Apagar?")) { d.p.splice(i,1); render(); } }
-    function delC(i) { if(confirm("Apagar?")) { d.c.splice(i,1); render(); } }
-    function resetarCaixa() { if(confirm("Zerar vendas de hoje?")) { d.p.forEach(x => x.vendas = 0); d.cx = 0; render(); } }
+    // Controle de Estoque Manual
+    function mudaCheio(idx, qtd) {
+        if(d.p[idx].cheios + qtd >= 0) { d.p[idx].cheios += qtd; render(); }
+    }
+    
+    function mudaEstGeral(tipo, qtd) {
+        if(d.est[tipo] + qtd >= 0) { d.est[tipo] += qtd; render(); }
+    }
+
+    function delP(i) { if(confirm("Apagar produto?")) { d.p.splice(i,1); render(); } }
+    function delC(i) { if(confirm("Apagar cliente?")) { d.c.splice(i,1); render(); } }
+    
+    function resetarCaixa() { 
+        if(confirm("Zerar as vendas de hoje? Isso limpa o caixa (R$) e a contagem de saídas. Seu estoque físico e seus clientes serão MANTIDOS.")) { 
+            d.p.forEach(x => { x.vendas = 0; x.entregas = 0; }); 
+            d.cx = 0; 
+            render(); 
+        } 
+    }
 
     function exportar() {
         const b = new Blob([JSON.stringify(d)], {type:'text/plain'});
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(b); a.download = 'backup_agua.txt'; a.click();
+        a.href = URL.createObjectURL(b); a.download = 'backup_agua_total.txt'; a.click();
     }
 
     function importar(input) {
         const r = new FileReader();
-        r.onload = function() { d = JSON.parse(r.result); render(); alert("Importado!"); };
+        r.onload = function() { d = JSON.parse(r.result); render(); alert("Dados Importados!"); };
         r.readAsText(input.files[0]);
     }
 
