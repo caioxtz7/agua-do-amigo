@@ -40,54 +40,51 @@
         .btn-sync { padding: 12px; background: #6c757d; color: white; font-size: 13px; }
         .brinde-ativo { background: #ffc107 !important; color: #000 !important; animation: pulse 1.5s infinite; }
         
-        /* ESTILO DO RELATÓRIO PDF */
+        /* PDF STYLE */
         #relatorio_print { display: none; }
-        
         @media print {
-            body { background: white; padding: 0; }
-            .no-print, .abas, .form-box, button, .sync-row, .total-card { display: none !important; }
-            .container { box-shadow: none; border: none; max-width: 100%; }
-            #relatorio_print { display: block; }
-            .secao { display: none !important; }
-            h1 { font-size: 28px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-            th { background: #eee; }
-            .print-total { font-size: 24px; font-weight: bold; margin-top: 20px; text-align: right; }
+            .no-print, .abas, .form-box, button, .sync-row, .total-card, .secao { display: none !important; }
+            #relatorio_print { display: block !important; }
+            .container { box-shadow: none; border: none; max-width: 100%; width: 100%; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 14px; }
+            th { background: #f2f2f2; }
+            .print-total { font-size: 22px; font-weight: bold; text-align: right; margin-top: 10px; }
         }
-
-        .titulo-secao { font-size: 16px; color: #444; border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-bottom: 15px; margin-top: 5px; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>💧 Água do Amigo</h1>
+    <h1 class="no-print">💧 Água do Amigo</h1>
 
     <div id="relatorio_print">
-        <h2 style="text-align:center">FECHAMENTO DE CAIXA</h2>
-        <p id="data_relatorio" style="text-align:center"></p>
+        <h2 style="text-align:center; margin-bottom: 5px;">Água do Amigo</h2>
+        <h3 style="text-align:center; margin-top: 0;">Relatório de Fechamento</h3>
+        <p id="data_relatorio" style="text-align:center; font-size: 12px;"></p>
         
-        <h3>📊 Resumo de Vendas</h3>
-        <table id="tabela_vendas">
+        <table>
             <thead>
-                <tr><th>Produto</th><th>Loja</th><th>Entr.</th><th>Subtotal</th></tr>
+                <tr>
+                    <th>Item</th>
+                    <th>Loja</th>
+                    <th>Entr.</th>
+                    <th>Subtotal</th>
+                </tr>
             </thead>
             <tbody id="corpo_vendas"></tbody>
         </table>
 
-        <h3>📦 Estoque Atual (Pátio)</h3>
-        <table>
-            <tr><td>Galões Cheios</td><td id="print_cheios">0</td></tr>
-            <tr><td>Galões Vazios</td><td id="print_vazios">0</td></tr>
-            <tr><td>Galões Quebrados/Furos</td><td id="print_quebrados">0</td></tr>
-            <tr style="font-weight:bold"><td>Total de Cascos</td><td id="print_total_cascos">0</td></tr>
-        </table>
+        <div class="print-total" id="print_total_dinheiro">TOTAL: R$ 0,00</div>
 
-        <div class="print-total" id="print_total_dinheiro">TOTAL GERAL: R$ 0,00</div>
-        <hr>
-        <p style="text-align:center; margin-top:50px">__________________________________________<br>Assinatura Responsável</p>
+        <h3 style="margin-top:30px">📦 Controle de Cascos</h3>
+        <table>
+            <tr><td>Galões Cheios (Estoque)</td><td id="print_cheios">0</td></tr>
+            <tr><td>Galões Vazios</td><td id="print_vazios">0</td></tr>
+            <tr><td>Galões Quebrados / Furos</td><td id="print_quebrados">0</td></tr>
+            <tr style="font-weight:bold; background: #eee;"><td>TOTAL PATRIMÔNIO</td><td id="print_total_cascos">0</td></tr>
+        </table>
+        <p style="text-align:center; margin-top:60px">__________________________________________<br>Assinatura Responsável</p>
     </div>
 
     <div class="abas no-print">
@@ -99,9 +96,9 @@
     <div id="v" class="secao active">
         <div class="form-box no-print">
             <strong>Novo Produto:</strong>
-            <input type="text" id="p_nome" placeholder="Produto">
-            <input type="text" id="p_loja" placeholder="Preço Loja">
-            <input type="text" id="p_ent" placeholder="Preço Entrega">
+            <input type="text" id="p_nome" placeholder="Nome do Produto">
+            <input type="number" id="p_loja" placeholder="Preço Loja (Ex: 10.00)">
+            <input type="number" id="p_ent" placeholder="Preço Entrega (Ex: 15.00)">
             <button class="btn-green" onclick="addP()">SALVAR</button>
         </div>
         <div id="lista_p"></div>
@@ -122,9 +119,9 @@
 
     <div id="e" class="secao">
         <div class="form-box no-print">
-            <h3 class="titulo-secao">Galões Cheios</h3>
+            <h3 style="margin:0 0 15px 0">Galões Cheios</h3>
             <div id="lista_estoque_cheios"></div>
-            <h3 class="titulo-secao">Retorno & Perdas</h3>
+            <h3 style="margin:20px 0 15px 0">Retorno & Perdas</h3>
             <div class="item-lista"><b>Vazios</b><div><button class="btn-red" onclick="mudaEstGeral('vazios', -1)">-</button><input type="number" class="input-estoque" id="qtd_vazios" onchange="digitaEstGeral('vazios', this.value)"><button class="btn-blue" onclick="mudaEstGeral('vazios', 1)">+</button></div></div>
             <div class="item-lista"><b>Quebrados</b><div><button class="btn-red" onclick="mudaEstGeral('quebrados', -1)">-</button><input type="number" class="input-estoque" id="qtd_quebrados" onchange="digitaEstGeral('quebrados', this.value)"><button class="btn-blue" onclick="mudaEstGeral('quebrados', 1)">+</button></div></div>
         </div>
@@ -137,14 +134,13 @@
     </div>
 
     <div class="no-print" style="margin-top: 20px; text-align: center;">
-        <button onclick="prepararPDF()" style="width:100%; padding:12px; background:#000; color:#fff; border-radius: 6px;">📄 GERAR RELATÓRIO PDF</button>
-        <button onclick="resetarCaixa()" style="color:red; background:none; font-size:12px; text-decoration:underline; margin-top:15px;">Zerar Caixa e Vendas do Dia</button>
+        <button onclick="prepararPDF()" style="width:100%; padding:15px; background:#000; color:#fff; border-radius: 6px; font-weight:bold;">📄 GERAR RELATÓRIO PDF</button>
+        <button onclick="resetarCaixa()" style="color:red; background:none; font-size:12px; text-decoration:underline; margin-top:20px;">Zerar Caixa e Vendas do Dia</button>
     </div>
 </div>
 
 <script>
-    let d = JSON.parse(localStorage.getItem('AGUA_DATA_FINAL')) || { p: [], c: [], cx: 0 };
-    if (!d.est) d.est = { vazios: 0, quebrados: 0 };
+    let d = JSON.parse(localStorage.getItem('AGUA_DATA_FINAL')) || { p: [], c: [], cx: 0, est: { vazios: 0, quebrados: 0 } };
 
     function trocar(id, el) {
         document.querySelectorAll('.secao').forEach(s => s.classList.remove('active'));
@@ -157,23 +153,24 @@
     function render() {
         localStorage.setItem('AGUA_DATA_FINAL', JSON.stringify(d));
         
-        // LOJA
+        // Render Loja
         const lp = document.getElementById('lista_p');
         lp.innerHTML = '';
-        let somaLoja = 0;
+        let somaDia = 0;
         d.p.forEach((i, idx) => {
-            let qtVendas = i.vendas || 0;
-            somaLoja += (qtVendas * i.pl);
-            lp.innerHTML += `<div class="item-lista"><div><b>${i.n}</b><br><small>R$ ${i.pl.toFixed(2)}</small></div><div style="text-align: right;"><span style="font-size:18px; font-weight:bold;">${qtVendas}</span> <button class="btn-blue" onclick="vL(${idx})">+1</button></div></div>`;
+            let v = i.vendas || 0;
+            let e = i.entregas || 0;
+            somaDia += (v * i.pl) + (e * i.pe);
+            lp.innerHTML += `<div class="item-lista"><div><b>${i.n}</b><br><small>R$ ${i.pl.toFixed(2)}</small></div><div style="text-align: right;"><span style="font-size:18px; font-weight:bold;">${v}</span> <button class="btn-blue" onclick="vL(${idx})">+1</button></div></div>`;
         });
-        document.getElementById('res_total').innerText = "R$ " + (somaLoja + d.cx).toFixed(2).replace('.', ',');
+        document.getElementById('res_total').innerText = "R$ " + somaDia.toFixed(2).replace('.', ',');
 
-        // SELECT CLIENTES
+        // Select Clientes
         const sel = document.getElementById('c_select');
         sel.innerHTML = '<option value="">Escolha a água...</option>';
         d.p.forEach((i, idx) => { sel.innerHTML += `<option value="${idx}">${i.n}</option>`; });
 
-        // LISTA CLIENTES
+        // Lista Clientes
         const lc = document.getElementById('lista_c');
         lc.innerHTML = '';
         d.c.forEach((i, idx) => {
@@ -182,58 +179,76 @@
             lc.innerHTML += `<div class="card-cli"><b>${i.n}</b><div class="info-end">📍 ${i.end || '-'}<br>🔍 ${i.ref || '-'}</div><div class="barra-bg"><div class="barra-fill" style="width:${(i.pts/10)*100}%"></div></div><button class="btn-green ${b ? 'brinde-ativo' : ''}" style="width:100%" onclick="vE(${idx})">${b ? '🎁 BRINDE!' : '+1 ENTREGA'}</button></div>`;
         });
 
-        // ESTOQUE
+        // Estoque
         const le = document.getElementById('lista_estoque_cheios');
         le.innerHTML = '';
-        let totalCheios = 0;
         d.p.forEach((i, idx) => {
-            totalCheios += (i.cheios || 0);
             le.innerHTML += `<div class="item-lista"><b>${i.n}</b><div style="display: flex; align-items: center;"><button class="btn-red" onclick="mudaCheio(${idx}, -1)">-</button><input type="number" class="input-estoque" value="${i.cheios || 0}" onchange="digitaCheio(${idx}, this.value)"><button class="btn-blue" onclick="mudaCheio(${idx}, 1)">+</button></div></div>`;
         });
         document.getElementById('qtd_vazios').value = d.est.vazios;
         document.getElementById('qtd_quebrados').value = d.est.quebrados;
     }
 
-    // AÇÕES
     function vL(idx) { d.p[idx].vendas = (d.p[idx].vendas || 0) + 1; render(); }
     function vE(idx) {
         let cli = d.c[idx], prod = d.p[cli.pi];
-        if(cli.pts >= 10) { cli.pts = 0; if(prod) prod.entregas = (prod.entregas || 0) + 1; } 
-        else { cli.pts++; if(prod) { d.cx += prod.pe; prod.entregas = (prod.entregas || 0) + 1; } }
+        if(!prod) return alert("Cadastre o produto primeiro!");
+        if(cli.pts >= 10) { cli.pts = 0; prod.entregas = (prod.entregas || 0) + 1; } 
+        else { cli.pts++; prod.entregas = (prod.entregas || 0) + 1; }
         render();
     }
-    function addP() { let n = document.getElementById('p_nome').value, l = parseFloat(document.getElementById('p_loja').value), e = parseFloat(document.getElementById('p_ent').value); if(n && l) { d.p.push({n:n, pl:l, pe:e, vendas:0, entregas:0, cheios:0}); render(); } }
-    function addC() { let n = document.getElementById('c_nome').value, ed = document.getElementById('c_end').value, rf = document.getElementById('c_ref').value, s = document.getElementById('c_select').value; if(n && s !== "") { d.c.push({n:n, end:ed, ref:rf, pi:parseInt(s), pts:0}); render(); } }
+
+    function addP() { 
+        let n = document.getElementById('p_nome').value;
+        let l = parseFloat(document.getElementById('p_loja').value);
+        let e = parseFloat(document.getElementById('p_ent').value);
+        if(n && l && e) { d.p.push({n:n, pl:l, pe:e, vendas:0, entregas:0, cheios:0}); render(); } 
+    }
+
+    function addC() { 
+        let n = document.getElementById('c_nome').value, ed = document.getElementById('c_end').value, rf = document.getElementById('c_ref').value, s = document.getElementById('c_select').value; 
+        if(n && s !== "") { d.c.push({n:n, end:ed, ref:rf, pi:parseInt(s), pts:0}); render(); } 
+    }
+
     function mudaCheio(idx, q) { d.p[idx].cheios = (d.p[idx].cheios || 0) + q; render(); }
     function digitaCheio(idx, v) { d.p[idx].cheios = parseInt(v) || 0; render(); }
     function mudaEstGeral(t, q) { d.est[t] = (d.est[t] || 0) + q; render(); }
     function digitaEstGeral(t, v) { d.est[t] = parseInt(v) || 0; render(); }
-    function resetarCaixa() { if(confirm("Zerar as vendas de hoje?")) { d.p.forEach(x => { x.vendas = 0; x.entregas = 0; }); d.cx = 0; render(); } }
 
-    // FUNÇÃO PARA PREPARAR OS DADOS NO PDF
     function prepararPDF() {
         const corpo = document.getElementById('corpo_vendas');
         corpo.innerHTML = '';
-        let totalGrana = 0;
+        let totalGeralDinheiro = 0;
         let totalCheios = 0;
 
         d.p.forEach(i => {
-            let sub = (i.vendas * i.pl) + (i.entregas * i.pe); // Aqui incluímos a lógica financeira
-            totalGrana += (i.vendas * i.pl); // Soma o que foi vendido na loja
+            let nVendasLoja = i.vendas || 0;
+            let nEntregas = i.entregas || 0;
+            let sub = (nVendasLoja * i.pl) + (nEntregas * i.pe);
+            
+            totalGeralDinheiro += sub;
             totalCheios += (i.cheios || 0);
-            corpo.innerHTML += `<tr><td>${i.n}</td><td>${i.vendas || 0}</td><td>${i.entregas || 0}</td><td>R$ ${sub.toFixed(2)}</td></tr>`;
+
+            corpo.innerHTML += `
+                <tr>
+                    <td>${i.n}</td>
+                    <td>${nVendasLoja}</td>
+                    <td>${nEntregas}</td>
+                    <td>R$ ${sub.toFixed(2)}</td>
+                </tr>`;
         });
 
-        document.getElementById('data_relatorio').innerText = new Date().toLocaleString();
+        document.getElementById('data_relatorio').innerText = new Date().toLocaleString('pt-BR');
         document.getElementById('print_cheios').innerText = totalCheios;
         document.getElementById('print_vazios').innerText = d.est.vazios;
         document.getElementById('print_quebrados').innerText = d.est.quebrados;
         document.getElementById('print_total_cascos').innerText = totalCheios + d.est.vazios + d.est.quebrados;
-        document.getElementById('print_total_dinheiro').innerText = "TOTAL EM CAIXA: R$ " + (totalGrana + d.cx).toFixed(2).replace('.', ',');
+        document.getElementById('print_total_dinheiro').innerText = "TOTAL GERAL: R$ " + totalGeralDinheiro.toFixed(2).replace('.', ',');
 
         window.print();
     }
 
+    function resetarCaixa() { if(confirm("Zerar as vendas de hoje?")) { d.p.forEach(x => { x.vendas = 0; x.entregas = 0; }); render(); } }
     function exportar() { const b = new Blob([JSON.stringify(d)], {type:'text/plain'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'backup.txt'; a.click(); }
     function importar(input) { const r = new FileReader(); r.onload = function() { d = JSON.parse(r.result); render(); }; r.readAsText(input.files[0]); }
 
