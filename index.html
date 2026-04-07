@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Água do Amigo - Gestão Total</title>
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3105/3105807.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background-image: url('https://images.unsplash.com/photo-1548839140-29a749e1cf4d?q=80&w=1920&auto=format&fit=crop');
+            background-size: cover; background-attachment: fixed; background-position: center;
+            margin: 0; padding: 15px; display: flex; justify-content: center; min-height: 100vh;
+        }
+        .card { 
+            background: rgba(255, 255, 255, 0.95); width: 100%; max-width: 450px; 
+            padding: 20px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); height: fit-content;
+        }
+        h1 { color: #007bff; text-align: center; margin: 0; }
+        .data-relatorio { text-align: center; color: #666; font-weight: bold; margin-bottom: 20px; display: block; }
+        
+        .add-box { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #007bff; }
+        .add-box input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .btn-add { background: #28a745; color: white; border: none; width: 100%; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
+        .nome { font-weight: bold; font-size: 16px; color: #333; }
+        .preco-unit { color: #28a745; font-size: 14px; }
+        
+        .controles { display: flex; align-items: center; gap: 8px; }
+        .qtd { font-size: 20px; font-weight: bold; color: #007bff; min-width: 30px; text-align: center; }
+        
+        button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; }
+        .btn-vender { background: #007bff; color: white; padding: 10px 15px; font-size: 16px; }
+        .btn-remover { background: #ff4d4d; color: white; padding: 5px 8px; font-size: 10px; }
+        
+        .obs-box { margin-top: 15px; padding: 10px; background: #fff; border-radius: 10px; border: 1px solid #ddd; }
+        .obs-box textarea { width: 100%; padding: 10px; border: none; font-size: 14px; box-sizing: border-box; resize: none; }
+
+        .resumo { background: #343a40; color: white; margin-top: 20px; padding: 15px; border-radius: 10px; text-align: center; }
+        .total-valor { font-size: 26px; color: #44ff7e; display: block; }
+
+        .acoes-sync { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .btn-sync { background: #17a2b8; color: white; padding: 10px; font-size: 12px; }
+        .btn-pdf { background: #6c757d; color: white; width: 100%; padding: 15px; margin-top: 10px; border-radius: 5px; }
+        .btn-reset { background: none; color: #ff4d4d; border: 1px solid #ff4d4d; width: 100%; padding: 8px; margin-top: 15px; font-size: 11px; width: 100%; }
+
+        @media print { 
+            .add-box, .btn-vender, .btn-pdf, .btn-reset, .btn-add, .btn-remover, .acoes-sync { display: none !important; } 
+            .card { box-shadow: none; border: none; background: white !important; max-width: 100%; }
+            body { background: white !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card" id="app">
+    <h1>💧 Água do Amigo</h1>
+    <span class="data-relatorio" id="exibir-data"></span>
+
+    <div class="add-box">
+        <input type="text" id="novo-nome" placeholder="Produto">
+        <input type="text" id="novo-preco" placeholder="Preço (Ex: 10,00)">
+        <button class="btn-add" onclick="adicionar()">+ CADASTRAR</button>
+    </div>
+    
+    <div id="lista"></div>
+
+    <div class="obs-box">
+        <strong>Observações:</strong>
+        <textarea id="obs-texto" rows="2" oninput="salvarObs()"></textarea>
+    </div>
+
+    <div class="resumo">
+        TOTAL ACUMULADO
+        <span class="total-valor" id="total-geral">R$ 0,00</span>
+    </div>
+
+    <div class="acoes-sync">
+        <button class="btn-sync" onclick="exportarDados()">📤 Celular > PC</button>
+        <button class="btn-sync" onclick="document.getElementById('input-file').click()">📥 Importar no PC</button>
+        <input type="file" id="input-file" style="display:none" onchange="importarDados(this)">
+    </div>
+
+    <button class="btn-pdf" onclick="window.print()">📄 GERAR PDF FINAL</button>
+    <button class="btn-reset" onclick="zerar()">Limpar Tudo</button>
+</div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('agua_db')) || [];
+    let obsSalva = localStorage.getItem('agua_obs') || "";
+
+    function render() {
+        const listaDiv = document.getElementById('lista');
+        listaDiv.innerHTML = '';
+        let soma = 0;
+
+        db.forEach((item, i) => {
+            soma += (item.vendas * item.preco);
+            listaDiv.innerHTML += `
+                <div class="item">
+                    <div class="info">
+                        <span class="nome">${item.nome}</span>
+                        <span class="preco-unit">R$ ${item.preco.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                    <div class="controles">
+                        <div class="qtd">${item.vendas}</div>
+                        <button class="btn-vender" onclick="vender(${i})">+1</button>
+                        <button class="btn-remover" onclick="remover(${i})">X</button>
+                    </div>
+                </div>`;
+        });
+
+        document.getElementById('total-geral').innerText = "R$ " + soma.toFixed(2).replace('.', ',');
+        document.getElementById('obs-texto').value = obsSalva;
+        localStorage.setItem('agua_db', JSON.stringify(db));
+        document.getElementById('exibir-data').innerText = new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'long'});
+    }
+
+    function vender(i) { db[i].vendas++; render(); }
+    function adicionar() {
+        const n = document.getElementById('novo-nome');
+        const p = document.getElementById('novo-preco');
+        let precoNum = parseFloat(p.value.replace(',', '.'));
+        if (n.value && !isNaN(precoNum)) {
+            db.push({ nome: n.value, preco: precoNum, vendas: 0 });
+            n.value = ""; p.value = ""; render();
+        }
+    }
+    function remover(i) { if(confirm("Excluir?")) { db.splice(i, 1); render(); } }
+    function salvarObs() { obsSalva = document.getElementById('obs-texto').value; localStorage.setItem('agua_obs', obsSalva); }
+    function zerar() { if(confirm("Limpar dia?")) { db.forEach(p => p.vendas = 0); obsSalva = ""; render(); } }
+
+    // FUNÇÕES DE SINCRONIZAÇÃO POR ARQUIVO
+    function exportarDados() {
+        const dataStr = JSON.stringify({db, obsSalva});
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `vendas_rua_${new Date().toLocaleDateString('pt-BR')}.txt`;
+        link.click();
+    }
+
+    function importarDados(input) {
+        const reader = new FileReader();
+        reader.onload = function() {
+            const importado = JSON.parse(reader.result);
+            // Lógica para somar as vendas do arquivo com as vendas que já estão na tela
+            importado.db.forEach(prodImportado => {
+                let existente = db.find(p => p.nome === prodImportado.nome);
+                if (existente) {
+                    existente.vendas += prodImportado.vendas;
+                } else {
+                    db.push(prodImportado);
+                }
+            });
+            obsSalva += "\n[IMPORTADO]: " + importado.obsSalva;
+            render();
+            alert("Dados do celular somados com sucesso!");
+        };
+        reader.readAsText(input.files[0]);
+    }
+
+    render();
+</script>
+</body>
+</html>
