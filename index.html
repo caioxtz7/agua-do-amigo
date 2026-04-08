@@ -38,6 +38,8 @@
         
         .badge { background: #007bff; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; }
         .input-mini { width: 70px !important; text-align: center; margin: 0 5px !important; }
+        .input-estoque-add { width: 80px !important; margin: 0 !important; border-radius: 8px 0 0 8px; border-right: none; }
+        .btn-estoque-add { border-radius: 0 8px 8px 0; padding: 12px; background: #28a745; color: white; }
     </style>
 </head>
 <body>
@@ -62,6 +64,7 @@
         </div>
         <div id="lista_loja"></div>
         <div class="total-dia">TOTAL VENDIDO HOJE<span class="valor-total" id="v_total_geral">R$ 0,00</span></div>
+        <button onclick="resetarVendasDia()" style="width:100%; background:#f8f9fa; border:1px solid #ccc; color:#666; margin-top:10px; padding:10px;">🔄 Zerar Vendas do Dia (Manter Produtos)</button>
     </div>
 
     <div id="atacado" class="secao">
@@ -91,15 +94,14 @@
         <div id="lista_estoque"></div>
     </div>
 
-    <div style="text-align:center; margin-top:20px;">
+    <div style="text-align:center; margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
         <button onclick="window.print()" style="background:#000; color:#fff; padding:12px; width:100%; border-radius:8px;">📄 GERAR RELATÓRIO</button>
-        <button onclick="limpezaForcada()" style="color:red; background:none; margin-top:15px; font-size:12px; text-decoration:underline;">⚠️ Limpar tudo e reiniciar sistema</button>
+        <button onclick="limpezaForcada()" style="color:red; background:none; margin-top:25px; font-size:11px; text-decoration:underline; opacity:0.5;">⚠️ Apagar TUDO e reiniciar do zero</button>
     </div>
 </div>
 
 <script>
-    // Banco de dados (p=produtos, a=atacado, c=clientes)
-    let db = JSON.parse(localStorage.getItem('AGUA_DB_V7')) || { p: [], a: [], c: [] };
+    let db = JSON.parse(localStorage.getItem('AGUA_DB_V8')) || { p: [], a: [], c: [] };
 
     function guia(id, el) {
         document.querySelectorAll('.secao').forEach(s => s.classList.remove('active'));
@@ -110,7 +112,7 @@
     }
 
     function atualizar() {
-        localStorage.setItem('AGUA_DB_V7', JSON.stringify(db));
+        localStorage.setItem('AGUA_DB_V8', JSON.stringify(db));
         
         const lLoja = document.getElementById('lista_loja'), lAta = document.getElementById('lista_atacado');
         const lEnt = document.getElementById('lista_entrega'), lEst = document.getElementById('lista_estoque');
@@ -121,22 +123,24 @@
 
         let faturamento = 0;
 
-        // Render Produtos
         db.p.forEach((i, idx) => {
             faturamento += (i.v_loja * i.pLoja) + (i.v_ent * i.pEnt) + (i.v_ata_total);
 
             lLoja.innerHTML += `<div class="card flex-btn">
-                <div><b>${i.n}</b><br><small>Loja: R$ ${i.pLoja.toFixed(2)}</small></div>
+                <div><b>${i.n}</b><br><small>Vendido hoje: ${i.v_loja + i.v_ent + (i.v_ata_total/i.pLoja || 0)} un</small></div>
                 <div><span class="badge">Estoque: ${i.qtd}</span> <button class="btn-venda" onclick="vendaLoja(${idx})">+1</button></div>
             </div>`;
 
             lEst.innerHTML += `<div class="card card-estoque">
+                <div style="margin-bottom:10px;"><b>${i.n}</b> | Atual: <span style="font-weight:bold; color:#007bff">${i.qtd}</span></div>
                 <div class="flex-btn">
-                    <b>${i.n}</b>
+                    <div style="display:flex;">
+                        <input type="number" id="add_estoque_${idx}" class="input-estoque-add" placeholder="Qtd">
+                        <button class="btn-estoque-add" onclick="adicionarEstoqueLote(${idx})">ENTRADA</button>
+                    </div>
                     <div>
-                        <button onclick="mudarQtd(${idx}, -1)">-</button>
-                        <input type="number" class="input-mini" value="${i.qtd}" onchange="setarQtd(${idx}, this.value)">
-                        <button onclick="mudarQtd(${idx}, 1)">+</button>
+                        <button style="padding:10px" onclick="mudarQtd(${idx}, -1)">-1</button>
+                        <button style="padding:10px" onclick="mudarQtd(${idx}, 1)">+1</button>
                     </div>
                 </div>
                 <div class="perda-row">
@@ -149,7 +153,6 @@
             selE.innerHTML += `<option value="${idx}">${i.n}</option>`;
         });
 
-        // Render Atacado (Preço por cliente)
         db.a.forEach((cli, idx) => {
             lAta.innerHTML += `<div class="card card-atacado">
                 <b>${cli.nome}</b> <small>(${db.p[cli.pIdx].n})</small><br>
@@ -161,7 +164,6 @@
             </div>`;
         });
 
-        // Render Entrega
         db.c.forEach((cli, idx) => {
             lEnt.innerHTML += `<div class="card card-entrega">
                 <b>${cli.nome}</b> <small>(${db.p[cli.pIdx].n})</small><br>
@@ -173,7 +175,6 @@
         document.getElementById('v_total_geral').innerText = "R$ " + faturamento.toFixed(2);
     }
 
-    // CADASTROS
     function cadastrarProduto() {
         const n = document.getElementById('p_nome').value;
         const pl = parseFloat(document.getElementById('p_preco_loja').value);
@@ -181,8 +182,10 @@
         if(n && pl) {
             db.p.push({ n, pLoja: pl, pEnt: pe, qtd: 0, v_loja: 0, v_ent: 0, v_ata_total: 0, furos: 0, vencidos: 0 });
             document.getElementById('p_nome').value = '';
+            document.getElementById('p_preco_loja').value = '';
+            document.getElementById('p_preco_ent').value = '';
             atualizar();
-        } else alert("Preencha o nome e preço da loja!");
+        } else alert("Preencha o nome e preço!");
     }
 
     function cadastrarAtacado() {
@@ -193,7 +196,7 @@
             db.a.push({ nome, pIdx: parseInt(pIdx), preco });
             document.getElementById('a_cliente').value = '';
             atualizar();
-        } else alert("Preencha todos os campos do atacado!");
+        } else alert("Preencha os campos do atacado!");
     }
 
     function cadastrarEntrega() {
@@ -207,7 +210,6 @@
         } else alert("Preencha nome e escolha a água!");
     }
 
-    // VENDAS E ESTOQUE
     function vendaLoja(idx) {
         if(db.p[idx].qtd > 0) { db.p[idx].v_loja++; db.p[idx].qtd--; atualizar(); } else alert("Sem estoque!");
     }
@@ -219,6 +221,7 @@
         if(q > 0 && prod.qtd >= q) {
             prod.v_ata_total += (q * cli.preco);
             prod.qtd -= q;
+            document.getElementById(`qtd_ata_${idx}`).value = '';
             atualizar();
         } else alert("Quantidade inválida ou sem estoque!");
     }
@@ -237,11 +240,42 @@
         }
     }
 
-    function mudarQtd(idx, val) { db.p[idx].qtd += val; atualizar(); }
+    // NOVA FUNÇÃO: ADICIONAR LOTE NO ESTOQUE
+    function adicionarEstoqueLote(idx) {
+        const input = document.getElementById(`add_estoque_${idx}`);
+        const valor = parseInt(input.value);
+        if (valor > 0) {
+            db.p[idx].qtd += valor;
+            input.value = '';
+            atualizar();
+        } else alert("Digite um valor válido para adicionar.");
+    }
+
+    function mudarQtd(idx, val) { 
+        if(db.p[idx].qtd + val >= 0) {
+            db.p[idx].qtd += val; 
+            atualizar(); 
+        }
+    }
+    
     function setarQtd(idx, val) { db.p[idx].qtd = parseInt(val) || 0; atualizar(); }
 
+    // NOVA FUNÇÃO: ZERAR VENDAS SEM PERDER CADASTRO
+    function resetarVendasDia() {
+        if(confirm("Deseja zerar as vendas de hoje? Isso não apagará seus produtos nem clientes, apenas o faturamento e as contagens do dia.")) {
+            db.p.forEach(p => {
+                p.v_loja = 0;
+                p.v_ent = 0;
+                p.v_ata_total = 0;
+                p.furos = 0;
+                p.vencidos = 0;
+            });
+            atualizar();
+        }
+    }
+
     function limpezaForcada() {
-        if(confirm("Isso apagará todos os dados. Confirma?")) {
+        if(confirm("ATENÇÃO: Isso apagará TODOS os produtos, clientes e histórico. Tem certeza?")) {
             localStorage.clear();
             location.reload();
         }
