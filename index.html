@@ -8,36 +8,28 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 10px; background: #f0f2f5; color: #1c1e21; }
         .container { background: #fff; max-width: 480px; margin: auto; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         h1 { text-align: center; color: #007bff; margin-bottom: 20px; font-size: 22px; }
-        
         .abas { display: flex; background: #eee; border-radius: 8px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
         .aba { flex: 1; padding: 10px 5px; text-align: center; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 13px; transition: 0.2s; white-space: nowrap; }
         .aba.active { background: #007bff; color: white; }
-        
         .secao { display: none; }
         .secao.active { display: block; }
-
         .form-box { background: #f8f9fa; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; }
         input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        
         button { cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: 0.2s; }
         .btn-green { width: 100%; padding: 14px; background: #28a745; color: white; font-size: 15px; }
         .btn-blue { background: #007bff; color: white; padding: 8px 14px; font-size: 18px; }
         .btn-red { background: #dc3545; color: white; padding: 8px 14px; font-size: 18px; }
-        
         .item-lista { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: #fafbfc; border-radius: 8px; margin-bottom: 10px; }
         .card-cli { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 8px; background: #fff; }
         .info-end { font-size: 13px; color: #606770; margin: 5px 0; }
-        
         .barra-bg { background: #eee; height: 12px; border-radius: 6px; margin: 8px 0; overflow: hidden; }
         .barra-fill { background: #28a745; height: 100%; transition: 0.4s; width: 0%; }
-        
         .total-card { background: #1c1e21; color: white; padding: 20px; border-radius: 10px; text-align: center; margin-top: 15px; }
         .total-valor { font-size: 32px; color: #44ff7e; display: block; font-weight: bold; }
-        
         .input-estoque { width: 60px !important; text-align: center; font-size: 20px !important; font-weight: bold; margin: 0 5px !important; padding: 5px !important; border: 1px solid #bbb !important; }
-
         .sync-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
         .btn-sync { padding: 12px; background: #6c757d; color: white; font-size: 13px; }
+        .brinde-ativo { background: #ffc107 !important; color: #000 !important; animation: pulse 1.5s infinite; }
         
         /* PDF STYLE */
         #relatorio_print { display: none; }
@@ -54,10 +46,9 @@
     </style>
 </head>
 <body>
-
 <div class="container">
     <h1 class="no-print">💧 Água do Amigo</h1>
-
+    
     <div id="relatorio_print">
         <h2 style="text-align:center; margin-bottom: 5px;">Água do Amigo</h2>
         <h3 style="text-align:center; margin-top: 0;">Relatório de Fechamento Diário</h3>
@@ -67,7 +58,7 @@
         <table>
             <thead>
                 <tr>
-                    <th>Marca/Item</th>
+                    <th>Item</th>
                     <th>Loja</th>
                     <th>Entr.</th>
                     <th>Subtotal</th>
@@ -76,7 +67,7 @@
             <tbody id="corpo_vendas"></tbody>
         </table>
         <div class="print-total" id="print_total_dinheiro">TOTAL EM CAIXA: R$ 0,00</div>
-
+        
         <h3 style="margin-top:25px">📦 Pátio (Estoque de Cheios)</h3>
         <table>
             <thead>
@@ -87,12 +78,13 @@
             </thead>
             <tbody id="corpo_estoque_cheios"></tbody>
         </table>
-
-        <h3>♻️ Cascos Vazios e Avarias</h3>
+        
+        <h3 style="margin-top:30px">♻️ Controle de Cascos (Patrimônio)</h3>
         <table>
+            <tr><td>Galões Cheios (Estoque)</td><td id="print_cheios" style="width: 80px; text-align: center;">0</td></tr>
             <tr><td>Galões Vazios (Geral)</td><td id="print_vazios" style="width: 80px; text-align: center;">0</td></tr>
             <tr><td>Galões Quebrados / Furos</td><td id="print_quebrados" style="width: 80px; text-align: center;">0</td></tr>
-            <tr style="font-weight:bold; background: #eee;"><td>TOTAL GERAL DE CASCOS (Patrimônio)</td><td id="print_total_cascos" style="text-align: center;">0</td></tr>
+            <tr style="font-weight:bold; background: #eee;"><td>TOTAL GERAL DE CASCOS</td><td id="print_total_cascos" style="text-align: center;">0</td></tr>
         </table>
         
         <p style="text-align:center; margin-top:50px; font-size: 12px;">Relatório gerado para conferência de caixa e estoque.<br><br>__________________________________________<br>Assinatura Responsável</p>
@@ -112,8 +104,15 @@
             <input type="number" id="p_ent" placeholder="Preço p/ Entrega">
             <button class="btn-green" onclick="addP()">SALVAR PRODUTO</button>
         </div>
+        
         <div id="lista_p"></div>
+        
         <div class="total-card">FECHAMENTO PARCIAL<span class="total-valor" id="res_total">R$ 0,00</span></div>
+        
+        <div class="total-card" style="background: #007bff;">
+            TOTAL DE ENTREGAS
+            <span class="total-valor" id="res_entregas" style="color: #fff;">0</span>
+        </div>
     </div>
 
     <div id="f" class="secao">
@@ -143,7 +142,7 @@
         <button class="btn-sync" onclick="document.getElementById('f_imp').click()">📥 RESTAURAR</button>
         <input type="file" id="f_imp" style="display:none" onchange="importar(this)">
     </div>
-
+    
     <div class="no-print" style="margin-top: 20px; text-align: center;">
         <button onclick="prepararPDF()" style="width:100%; padding:15px; background:#000; color:#fff; border-radius: 6px; font-weight:bold; font-size:16px;">📄 GERAR RELATÓRIO PDF</button>
         <button onclick="resetarCaixa()" style="color:red; background:none; font-size:12px; text-decoration:underline; margin-top:20px; border:none; cursor:pointer;">Zerar Movimentação do Dia</button>
@@ -164,21 +163,36 @@
     function render() {
         localStorage.setItem('AGUA_DATA_FINAL', JSON.stringify(d));
         
+        // Render Loja
         let lp = document.getElementById('lista_p');
         lp.innerHTML = '';
         let somaTotal = 0;
+        let totalEntregas = 0; // Variavel que soma as entregas
+
         d.p.forEach((i, idx) => {
             let v = i.vendas || 0;
             let e = i.entregas || 0;
+            
             somaTotal += (v * i.pl) + (e * i.pe);
-            lp.innerHTML += `<div class="item-lista"><div><b>${i.n}</b><br><small>Loja: R$ ${i.pl.toFixed(2)}</small></div><div style="text-align: right;"><span style="font-size:18px; font-weight:bold;">${v}</span> <button class="btn-blue" onclick="vL(${idx})">+1</button></div></div>`;
-        });
-        document.getElementById('res_total').innerText = "R$ " + somaTotal.toFixed(2).replace('.', ',');
+            totalEntregas += e; // Somando a quantidade de entregas no total
 
+            lp.innerHTML += `<div class="item-lista">
+                <div><b>${i.n}</b><br><small>Loja: R$ ${i.pl.toFixed(2)} | Entregas feitas: ${e}</small></div>
+                <div style="text-align: right;"><span style="font-size:18px; font-weight:bold;">${v}</span> <button class="btn-blue" onclick="vL(${idx})">+1</button></div>
+            </div>`;
+        });
+
+        document.getElementById('res_total').innerText = "R$ " + somaTotal.toFixed(2).replace('.', ',');
+        
+        // Atualiza o painel de entregas do HTML
+        document.getElementById('res_entregas').innerText = totalEntregas; 
+
+        // Select Clientes
         const sel = document.getElementById('c_select');
         sel.innerHTML = '<option value="">Qual água o cliente usa?</option>';
         d.p.forEach((i, idx) => { sel.innerHTML += `<option value="${idx}">${i.n}</option>`; });
 
+        // Lista Clientes
         const lc = document.getElementById('lista_c');
         lc.innerHTML = '';
         d.c.forEach((i, idx) => {
@@ -186,33 +200,53 @@
             lc.innerHTML += `<div class="card-cli"><b>${i.n}</b><div class="info-end">📍 ${i.end || '-'}<br>🔍 ${i.ref || '-'}</div><div class="barra-bg"><div class="barra-fill" style="width:${(i.pts/10)*100}%"></div></div><button class="btn-green ${b ? 'brinde-ativo' : ''}" style="width:100%" onclick="vE(${idx})">${b ? '🎁 ENTREGAR BRINDE' : '+1 ENTREGA'}</button></div>`;
         });
 
+        // Estoque
         const le = document.getElementById('lista_estoque_cheios');
         le.innerHTML = '';
         d.p.forEach((i, idx) => {
             le.innerHTML += `<div class="item-lista"><b>${i.n}</b><div style="display: flex; align-items: center;"><button class="btn-red" onclick="mudaCheio(${idx}, -1)">-</button><input type="number" class="input-estoque" value="${i.cheios || 0}" onchange="digitaCheio(${idx}, this.value)"><button class="btn-blue" onclick="mudaCheio(${idx}, 1)">+</button></div></div>`;
         });
+        
         document.getElementById('qtd_vazios').value = d.est.vazios;
         document.getElementById('qtd_quebrados').value = d.est.quebrados;
     }
 
     function vL(idx) { d.p[idx].vendas = (d.p[idx].vendas || 0) + 1; render(); }
+    
     function vE(idx) {
         let cli = d.c[idx], prod = d.p[cli.pi];
         if(!prod) return alert("Erro: Produto não encontrado!");
-        if(cli.pts >= 10) { cli.pts = 0; } 
-        else { cli.pts++; }
+        
+        if(cli.pts >= 10) { 
+            cli.pts = 0; 
+        } else { 
+            cli.pts++; 
+        }
         prod.entregas = (prod.entregas || 0) + 1;
         render();
     }
 
-    function addP() { 
-        let n = document.getElementById('p_nome').value, l = parseFloat(document.getElementById('p_loja').value), e = parseFloat(document.getElementById('p_ent').value);
-        if(n && l && e) { d.p.push({n:n, pl:l, pe:e, vendas:0, entregas:0, cheios:0}); render(); document.getElementById('p_nome').value=''; } 
+    function addP() {
+        let n = document.getElementById('p_nome').value;
+        let l = parseFloat(document.getElementById('p_loja').value);
+        let e = parseFloat(document.getElementById('p_ent').value);
+        if(n && l && e) { 
+            d.p.push({n:n, pl:l, pe:e, vendas:0, entregas:0, cheios:0}); 
+            render(); 
+            document.getElementById('p_nome').value=''; 
+        }
     }
 
-    function addC() { 
-        let n = document.getElementById('c_nome').value, ed = document.getElementById('c_end').value, rf = document.getElementById('c_ref').value, s = document.getElementById('c_select').value; 
-        if(n && s !== "") { d.c.push({n:n, end:ed, ref:rf, pi:parseInt(s), pts:0}); render(); document.getElementById('c_nome').value=''; } 
+    function addC() {
+        let n = document.getElementById('c_nome').value;
+        let ed = document.getElementById('c_end').value;
+        let rf = document.getElementById('c_ref').value;
+        let s = document.getElementById('c_select').value;
+        if(n && s !== "") { 
+            d.c.push({n:n, end:ed, ref:rf, pi:parseInt(s), pts:0}); 
+            render(); 
+            document.getElementById('c_nome').value=''; 
+        }
     }
 
     function mudaCheio(idx, q) { d.p[idx].cheios = (d.p[idx].cheios || 0) + q; render(); }
@@ -230,31 +264,48 @@
         let totalCheiosGeral = 0;
 
         d.p.forEach(i => {
-            // Tabela de Vendas
             let v = i.vendas || 0;
             let e = i.entregas || 0;
             let sub = (v * i.pl) + (e * i.pe);
             totalDinheiro += sub;
-            corpoVendas.innerHTML += `<tr><td>${i.n}</td><td>${v}</td><td>${e}</td><td>R$ ${sub.toFixed(2)}</td></tr>`;
 
-            // Tabela de Estoque (Individual por Marca)
+            corpoVendas.innerHTML += `<tr><td>${i.n}</td><td>${v}</td><td>${e}</td><td>R$ ${sub.toFixed(2)}</td></tr>`;
+            
             let qtdC = i.cheios || 0;
             totalCheiosGeral += qtdC;
             corpoEstoque.innerHTML += `<tr><td>${i.n}</td><td style="text-align:center">${qtdC}</td></tr>`;
         });
 
         document.getElementById('data_relatorio').innerText = new Date().toLocaleString('pt-BR');
+        document.getElementById('print_cheios').innerText = totalCheiosGeral;
         document.getElementById('print_vazios').innerText = d.est.vazios;
         document.getElementById('print_quebrados').innerText = d.est.quebrados;
         document.getElementById('print_total_cascos').innerText = totalCheiosGeral + d.est.vazios + d.est.quebrados;
         document.getElementById('print_total_dinheiro').innerText = "TOTAL EM CAIXA: R$ " + totalDinheiro.toFixed(2).replace('.', ',');
-
+        
         window.print();
     }
 
-    function resetarCaixa() { if(confirm("Deseja zerar as vendas e entregas do dia? O estoque e clientes serão mantidos.")) { d.p.forEach(x => { x.vendas = 0; x.entregas = 0; }); render(); } }
-    function exportar() { const b = new Blob([JSON.stringify(d)], {type:'text/plain'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'backup_agua.txt'; a.click(); }
-    function importar(input) { const r = new FileReader(); r.onload = function() { d = JSON.parse(r.result); render(); }; r.readAsText(input.files[0]); }
+    function resetarCaixa() {
+        if(confirm("Deseja zerar as vendas e entregas do dia? O estoque e clientes serão mantidos.")) {
+            d.p.forEach(x => { x.vendas = 0; x.entregas = 0; });
+            render();
+        }
+    }
+
+    function exportar() {
+        const b = new Blob([JSON.stringify(d)], {type:'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(b);
+        a.download = 'backup_agua.txt';
+        a.click();
+    }
+
+    function importar(input) {
+        const r = new FileReader();
+        r.onload = function() { d = JSON.parse(r.result); render(); };
+        r.readAsText(input.files[0]);
+    }
 
     render();
 </script>
