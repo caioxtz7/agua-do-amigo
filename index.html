@@ -2,44 +2,46 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão 360</title>
+    <title>Água do Amigo - Gestão v14</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 10px; background: #f4f7f6; color: #333; }
-        .container { max-width: 500px; margin: auto; background: #fff; padding: 15px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #f0f2f5; color: #333; }
+        .container { max-width: 550px; margin: auto; background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #007bff; font-size: 22px; margin-bottom: 15px; }
         
-        h1 { text-align: center; color: #007bff; font-size: 22px; margin-bottom: 20px; }
-        
-        .abas { display: flex; gap: 5px; margin-bottom: 20px; background: #eee; padding: 5px; border-radius: 10px; }
-        .aba { flex: 1; padding: 12px 5px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; font-size: 11px; transition: 0.3s; }
+        .abas { display: flex; gap: 4px; background: #eee; padding: 5px; border-radius: 10px; margin-bottom: 20px; }
+        .aba { flex: 1; padding: 12px 2px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; font-size: 11px; color: #555; }
         .aba.active { background: #007bff; color: #fff; }
 
         .secao { display: none; }
         .secao.active { display: block; }
 
-        .caixa-form { background: #f9f9f9; border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .caixa-form { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
         input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         
-        button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; }
-        .btn-add { width: 100%; padding: 15px; background: #28a745; color: #fff; font-size: 16px; }
-        .btn-venda { background: #007bff; color: #fff; padding: 10px 15px; }
-        .btn-perda { background: #dc3545; color: #fff; padding: 8px; font-size: 11px; flex: 1; }
-
-        .card { border: 1px solid #eee; padding: 15px; border-radius: 10px; margin-bottom: 10px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .card-entrega { border-left: 5px solid #17a2b8; }
-        .card-atacado { border-left: 5px solid #fd7e14; }
-        .card-estoque { border-left: 5px solid #343a40; }
-
-        .flex-btn { display: flex; justify-content: space-between; align-items: center; }
-        .perda-row { display: flex; gap: 5px; margin-top: 10px; }
+        button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        button:active { transform: scale(0.95); }
+        .btn-verde { width: 100%; padding: 15px; background: #28a745; color: #fff; font-size: 16px; }
         
-        .total-dia { background: #222; color: #fff; padding: 20px; border-radius: 12px; text-align: center; margin-top: 20px; }
+        .card { border: 1px solid #eee; padding: 15px; border-radius: 10px; margin-bottom: 10px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .flex-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        
+        .info-vendas { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ddd; font-size: 11px; color: #666; display: flex; flex-wrap: wrap; gap: 8px; }
+        .info-vendas b { color: #007bff; }
+
+        .btn-perda { background: #fff; border: 1px solid #dc3545; color: #dc3545; padding: 5px; font-size: 10px; flex: 1; }
+        .btn-vazio { background: #f8f9fa; border: 1px solid #6c757d; color: #6c757d; padding: 5px; font-size: 10px; flex: 1; }
+
+        .total-box { background: #1c1e21; color: #fff; padding: 20px; border-radius: 12px; text-align: center; margin-top: 15px; }
         .valor-total { display: block; font-size: 32px; color: #44ff7e; font-weight: bold; }
-        
-        .badge { background: #007bff; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; }
-        .input-mini { width: 70px !important; text-align: center; margin: 0 5px !important; }
-        .input-estoque-add { width: 80px !important; margin: 0 !important; border-radius: 8px 0 0 8px; border-right: none; }
-        .btn-estoque-add { border-radius: 0 8px 8px 0; padding: 12px; background: #28a745; color: white; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #relatorio-area, #relatorio-area * { visibility: visible; }
+            #relatorio-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #000; padding: 5px; text-align: center; font-size: 10px; }
+        }
     </style>
 </head>
 <body>
@@ -56,232 +58,245 @@
 
     <div id="loja" class="secao active">
         <div class="caixa-form">
-            <strong>Cadastrar Nova Água:</strong>
+            <strong id="titulo-prod">Configurar Produto:</strong>
+            <input type="hidden" id="edit-idx">
             <input type="text" id="p_nome" placeholder="Marca (Ex: Indaiá)">
-            <input type="number" id="p_preco_loja" placeholder="Preço Loja (Ex: 12)">
-            <input type="number" id="p_preco_ent" placeholder="Preço Entrega (Ex: 15)">
-            <button class="btn-add" onclick="cadastrarProduto()">SALVAR PRODUTO</button>
+            <input type="number" id="p_preco_l" placeholder="Preço Loja (R$)">
+            <input type="number" id="p_preco_e" placeholder="Preço Entrega (R$)">
+            <button class="btn-verde" onclick="salvarProduto()">SALVAR PRODUTO</button>
         </div>
         <div id="lista_loja"></div>
-        <div class="total-dia">TOTAL VENDIDO HOJE<span class="valor-total" id="v_total_geral">R$ 0,00</span></div>
-        <button onclick="resetarVendasDia()" style="width:100%; background:#f8f9fa; border:1px solid #ccc; color:#666; margin-top:10px; padding:10px;">🔄 Zerar Vendas do Dia (Manter Produtos)</button>
+        <div class="total-box">CAIXA DO DIA<span class="valor-total" id="faturamento_hoje">R$ 0,00</span></div>
+        <button onclick="zerarVendas()" style="width:100%; background:none; color:red; margin-top:10px; font-size:12px; text-decoration: underline;">Zerar Vendas e Perdas do Dia</button>
     </div>
 
     <div id="atacado" class="secao">
         <div class="caixa-form">
-            <strong>Novo Cliente de Atacado:</strong>
-            <input type="text" id="a_cliente" placeholder="Nome do Cliente">
-            <select id="a_select_p"></select>
-            <input type="number" id="a_preco_cli" placeholder="Preço p/ este cliente (Ex: 9.50)">
-            <button class="btn-add" style="background:#fd7e14" onclick="cadastrarAtacado()">SALVAR CLIENTE</button>
+            <strong>Atacado:</strong>
+            <input type="text" id="a_nome" placeholder="Nome do Cliente">
+            <select id="a_p_idx"></select>
+            <input type="number" id="a_preco" placeholder="Preço Combinado">
+            <button class="btn-verde" style="background:#fd7e14" onclick="salvarAtacado()">SALVAR CLIENTE</button>
         </div>
         <div id="lista_atacado"></div>
     </div>
 
     <div id="entrega" class="secao">
         <div class="caixa-form">
-            <strong>Novo Cliente Entrega:</strong>
+            <strong>Entrega:</strong>
             <input type="text" id="e_nome" placeholder="Nome">
             <input type="text" id="e_end" placeholder="Endereço">
-            <select id="e_select_p"></select>
-            <button class="btn-add" style="background:#17a2b8" onclick="cadastrarEntrega()">SALVAR CLIENTE</button>
+            <select id="e_p_idx"></select>
+            <button class="btn-verde" style="background:#17a2b8" onclick="salvarEntrega()">SALVAR CLIENTE</button>
         </div>
         <div id="lista_entrega"></div>
     </div>
 
     <div id="estoque" class="secao">
-        <h3 style="text-align:center">Controle de Pátio e Perdas</h3>
+        <h3 style="text-align:center; font-size: 16px;">Controle de Pátio</h3>
         <div id="lista_estoque"></div>
     </div>
 
-    <div style="text-align:center; margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
-        <button onclick="window.print()" style="background:#000; color:#fff; padding:12px; width:100%; border-radius:8px;">📄 GERAR RELATÓRIO</button>
-        <button onclick="limpezaForcada()" style="color:red; background:none; margin-top:25px; font-size:11px; text-decoration:underline; opacity:0.5;">⚠️ Apagar TUDO e reiniciar do zero</button>
+    <div style="text-align:center; margin-top:20px;">
+        <button onclick="gerarRelatorio()" style="background:#000; color:#fff; padding:15px; width:100%; border-radius:8px;">📄 GERAR RELATÓRIO PLANILHA</button>
     </div>
 </div>
 
+<div id="relatorio-area" style="display:none">
+    <h2 style="text-align:center">Planilha de Fechamento - Água do Amigo</h2>
+    <p id="data-pdf" style="text-align:center"></p>
+    <table>
+        <thead>
+            <tr>
+                <th>Produto</th>
+                <th>Loja</th>
+                <th>Entr.</th>
+                <th>Atac.</th>
+                <th>Queb.</th>
+                <th>Venc.</th>
+                <th>Vazios</th>
+                <th>Estoque</th>
+                <th>Total R$</th>
+            </tr>
+        </thead>
+        <tbody id="corpo-planilha"></tbody>
+    </table>
+</div>
+
 <script>
-    let db = JSON.parse(localStorage.getItem('AGUA_DB_V8')) || { p: [], a: [], c: [] };
+    let db = JSON.parse(localStorage.getItem('AGUA_V14')) || { produtos: [], atacado: [], entrega: [] };
 
     function guia(id, el) {
         document.querySelectorAll('.secao').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.aba').forEach(a => a.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         el.classList.add('active');
-        atualizar();
+        renderizar();
     }
 
-    function atualizar() {
-        localStorage.setItem('AGUA_DB_V8', JSON.stringify(db));
-        
+    function renderizar() {
+        localStorage.setItem('AGUA_V14', JSON.stringify(db));
         const lLoja = document.getElementById('lista_loja'), lAta = document.getElementById('lista_atacado');
         const lEnt = document.getElementById('lista_entrega'), lEst = document.getElementById('lista_estoque');
-        const selA = document.getElementById('a_select_p'), selE = document.getElementById('e_select_p');
+        const selA = document.getElementById('a_p_idx'), selE = document.getElementById('e_p_idx');
 
         lLoja.innerHTML = lAta.innerHTML = lEnt.innerHTML = lEst.innerHTML = '';
-        selA.innerHTML = selE.innerHTML = '<option value="">Selecione a Água...</option>';
+        selA.innerHTML = selE.innerHTML = '<option value="">Escolha a Marca...</option>';
+        
+        let totalFaturamento = 0;
 
-        let faturamento = 0;
+        db.produtos.forEach((p, i) => {
+            totalFaturamento += (p.v_l * p.pL) + (p.v_e * p.pE) + (p.v_a_r);
+            selA.innerHTML += `<option value="${i}">${p.nome}</option>`;
+            selE.innerHTML += `<option value="${i}">${p.nome}</option>`;
 
-        db.p.forEach((i, idx) => {
-            faturamento += (i.v_loja * i.pLoja) + (i.v_ent * i.pEnt) + (i.v_ata_total);
-
-            lLoja.innerHTML += `<div class="card flex-btn">
-                <div><b>${i.n}</b><br><small>Vendido hoje: ${i.v_loja + i.v_ent + (i.v_ata_total/i.pLoja || 0)} un</small></div>
-                <div><span class="badge">Estoque: ${i.qtd}</span> <button class="btn-venda" onclick="vendaLoja(${idx})">+1</button></div>
-            </div>`;
-
-            lEst.innerHTML += `<div class="card card-estoque">
-                <div style="margin-bottom:10px;"><b>${i.n}</b> | Atual: <span style="font-weight:bold; color:#007bff">${i.qtd}</span></div>
-                <div class="flex-btn">
-                    <div style="display:flex;">
-                        <input type="number" id="add_estoque_${idx}" class="input-estoque-add" placeholder="Qtd">
-                        <button class="btn-estoque-add" onclick="adicionarEstoqueLote(${idx})">ENTRADA</button>
-                    </div>
-                    <div>
-                        <button style="padding:10px" onclick="mudarQtd(${idx}, -1)">-1</button>
-                        <button style="padding:10px" onclick="mudarQtd(${idx}, 1)">+1</button>
+            // CARD LOJA
+            lLoja.innerHTML += `<div class="card">
+                <div class="flex-row">
+                    <div><b>${p.nome}</b><br><small style="color:blue">Cheios: ${p.qtd}</small> | <small style="color:orange">Vazios: ${p.vazios || 0}</small></div>
+                    <div style="display:flex; gap:5px">
+                        <button style="background:#007bff; color:white; padding:8px 12px; border-radius:8px;" onclick="vendaL(${i})">VENDER</button>
+                        <button style="background:#ccc; padding:8px;" onclick="prepararEdicao(${i})">✏️</button>
                     </div>
                 </div>
-                <div class="perda-row">
-                    <button class="btn-perda" onclick="perda(${idx}, 'f')">🚩 FURADO (${i.furos})</button>
-                    <button class="btn-perda" onclick="perda(${idx}, 'v')">⌛ VENCIDO (${i.vencidos})</button>
+                <div class="info-vendas">
+                    <span>🛒 Loja: <b>${p.v_l}</b></span> | <span>🚚 Entr: <b>${p.v_e}</b></span> | <span>🏢 Atac: <b>${p.v_a_q}</b></span>
                 </div>
             </div>`;
 
-            selA.innerHTML += `<option value="${idx}">${i.n}</option>`;
-            selE.innerHTML += `<option value="${idx}">${i.n}</option>`;
-        });
-
-        db.a.forEach((cli, idx) => {
-            lAta.innerHTML += `<div class="card card-atacado">
-                <b>${cli.nome}</b> <small>(${db.p[cli.pIdx].n})</small><br>
-                <small>Combinado: R$ ${cli.preco.toFixed(2)}</small>
-                <div class="flex-btn" style="margin-top:10px">
-                    <input type="number" id="qtd_ata_${idx}" class="input-mini" placeholder="Qtd" style="width:100px !important; text-align:left">
-                    <button class="btn-venda" style="background:#fd7e14" onclick="vendaAtacado(${idx})">VENDER</button>
+            // CARD ESTOQUE (COM VAZIOS E PERDAS)
+            lEst.innerHTML += `<div class="card">
+                <div class="flex-row"><b>${p.nome}</b> <span>Cheios: <b>${p.qtd}</b></span></div>
+                <div class="flex-row" style="margin-top:10px">
+                    <input type="number" id="add_q_${i}" placeholder="Entrada Cheios" style="margin:0; width:110px">
+                    <button class="btn-verde" style="padding:10px; flex:1" onclick="addEstoque(${i})">ENTRADA</button>
+                </div>
+                <div class="flex-row" style="margin-top:10px; border-top: 1px solid #eee; padding-top:10px">
+                    <div style="font-size: 11px; flex: 1">Vazios no Pátio: <b>${p.vazios || 0}</b></div>
+                    <button class="btn-vazio" onclick="mudarVazio(${i}, 1)">+1 Vazio</button>
+                    <button class="btn-vazio" onclick="mudarVazio(${i}, -1)">-1 Vazio</button>
+                </div>
+                <div class="flex-row" style="margin-top:10px; gap:5px">
+                    <button class="btn-perda" onclick="perda(${i}, 'q')">⚠️ QUEBROU (${p.quebras || 0})</button>
+                    <button class="btn-perda" onclick="perda(${i}, 'v')">⌛ VENCIDO (${p.vencidos || 0})</button>
                 </div>
             </div>`;
         });
 
-        db.c.forEach((cli, idx) => {
-            lEnt.innerHTML += `<div class="card card-entrega">
-                <b>${cli.nome}</b> <small>(${db.p[cli.pIdx].n})</small><br>
-                <small>📍 ${cli.end}</small>
-                <button class="btn-add" style="background:#17a2b8; margin-top:10px; padding:8px" onclick="vendaEntrega(${idx})">+1 ENTREGA</button>
+        // LISTA ATACADO
+        db.atacado.forEach((c, i) => {
+            lAta.innerHTML += `<div class="card flex-row">
+                <div><b>${c.nome}</b><br><small>${db.produtos[c.pIdx]?.nome}</small></div>
+                <div style="display:flex; gap:5px">
+                    <input type="number" id="q_a_${i}" placeholder="Qtd" style="margin:0; width:60px">
+                    <button style="background:#fd7e14; color:white; padding:10px" onclick="vendaA(${i})">VENDER</button>
+                </div>
             </div>`;
         });
 
-        document.getElementById('v_total_geral').innerText = "R$ " + faturamento.toFixed(2);
+        // LISTA ENTREGA
+        db.entrega.forEach((c, i) => {
+            lEnt.innerHTML += `<div class="card flex-row">
+                <div><b>${c.nome}</b><br><small>${c.end}</small></div>
+                <button style="background:#17a2b8; color:white; padding:10px" onclick="vendaE(${i})">SAÍDA +1</button>
+            </div>`;
+        });
+
+        document.getElementById('faturamento_hoje').innerText = "R$ " + totalFaturamento.toFixed(2);
     }
 
-    function cadastrarProduto() {
-        const n = document.getElementById('p_nome').value;
-        const pl = parseFloat(document.getElementById('p_preco_loja').value);
-        const pe = parseFloat(document.getElementById('p_preco_ent').value);
-        if(n && pl) {
-            db.p.push({ n, pLoja: pl, pEnt: pe, qtd: 0, v_loja: 0, v_ent: 0, v_ata_total: 0, furos: 0, vencidos: 0 });
-            document.getElementById('p_nome').value = '';
-            document.getElementById('p_preco_loja').value = '';
-            document.getElementById('p_preco_ent').value = '';
-            atualizar();
-        } else alert("Preencha o nome e preço!");
-    }
-
-    function cadastrarAtacado() {
-        const nome = document.getElementById('a_cliente').value;
-        const pIdx = document.getElementById('a_select_p').value;
-        const preco = parseFloat(document.getElementById('a_preco_cli').value);
-        if(nome && pIdx !== "" && preco) {
-            db.a.push({ nome, pIdx: parseInt(pIdx), preco });
-            document.getElementById('a_cliente').value = '';
-            atualizar();
-        } else alert("Preencha os campos do atacado!");
-    }
-
-    function cadastrarEntrega() {
-        const nome = document.getElementById('e_nome').value;
-        const end = document.getElementById('e_end').value;
-        const pIdx = document.getElementById('e_select_p').value;
-        if(nome && pIdx !== "") {
-            db.c.push({ nome, end, pIdx: parseInt(pIdx) });
-            document.getElementById('e_nome').value = '';
-            atualizar();
-        } else alert("Preencha nome e escolha a água!");
-    }
-
-    function vendaLoja(idx) {
-        if(db.p[idx].qtd > 0) { db.p[idx].v_loja++; db.p[idx].qtd--; atualizar(); } else alert("Sem estoque!");
-    }
-
-    function vendaAtacado(idx) {
-        const q = parseInt(document.getElementById(`qtd_ata_${idx}`).value);
-        const cli = db.a[idx];
-        const prod = db.p[cli.pIdx];
-        if(q > 0 && prod.qtd >= q) {
-            prod.v_ata_total += (q * cli.preco);
-            prod.qtd -= q;
-            document.getElementById(`qtd_ata_${idx}`).value = '';
-            atualizar();
-        } else alert("Quantidade inválida ou sem estoque!");
-    }
-
-    function vendaEntrega(idx) {
-        const cli = db.c[idx];
-        const prod = db.p[cli.pIdx];
-        if(prod.qtd > 0) { prod.v_ent++; prod.qtd--; atualizar(); } else alert("Sem estoque!");
-    }
-
-    function perda(idx, tipo) {
-        if(db.p[idx].qtd > 0) {
-            if(tipo === 'f') db.p[idx].furos++; else db.p[idx].vencidos++;
-            db.p[idx].qtd--;
-            atualizar();
+    // FUNÇÕES
+    function salvarProduto() {
+        const n = document.getElementById('p_nome').value, pl = parseFloat(document.getElementById('p_preco_l').value), pe = parseFloat(document.getElementById('p_preco_e').value), idx = document.getElementById('edit-idx').value;
+        if(!n) return;
+        if(idx !== "") {
+            db.produtos[idx] = {...db.produtos[idx], nome: n, pL: pl, pE: pe};
+            document.getElementById('edit-idx').value = "";
+        } else {
+            db.produtos.push({nome: n, pL: pl, pE: pe, qtd: 0, vazios: 0, v_l: 0, v_e: 0, v_a_r: 0, v_a_q: 0, quebras: 0, vencidos: 0});
         }
+        document.getElementById('p_nome').value = ''; document.getElementById('p_preco_l').value = ''; document.getElementById('p_preco_e').value = '';
+        renderizar();
     }
 
-    // NOVA FUNÇÃO: ADICIONAR LOTE NO ESTOQUE
-    function adicionarEstoqueLote(idx) {
-        const input = document.getElementById(`add_estoque_${idx}`);
-        const valor = parseInt(input.value);
-        if (valor > 0) {
-            db.p[idx].qtd += valor;
-            input.value = '';
-            atualizar();
-        } else alert("Digite um valor válido para adicionar.");
+    function prepararEdicao(i) {
+        const p = db.produtos[i];
+        document.getElementById('p_nome').value = p.nome; document.getElementById('p_preco_l').value = p.pL; document.getElementById('p_preco_e').value = p.pE; document.getElementById('edit-idx').value = i;
+        window.scrollTo(0,0);
     }
 
-    function mudarQtd(idx, val) { 
-        if(db.p[idx].qtd + val >= 0) {
-            db.p[idx].qtd += val; 
-            atualizar(); 
-        }
+    function salvarAtacado() {
+        const n = document.getElementById('a_nome').value, p = document.getElementById('a_p_idx').value, pr = parseFloat(document.getElementById('a_preco').value);
+        if(n && p !== "") { db.atacado.push({nome: n, pIdx: parseInt(p), preco: pr}); renderizar(); }
+    }
+
+    function salvarEntrega() {
+        const n = document.getElementById('e_nome').value, e = document.getElementById('e_end').value, p = document.getElementById('e_p_idx').value;
+        if(n && p !== "") { db.entrega.push({nome: n, end: e, pIdx: parseInt(p)}); renderizar(); }
+    }
+
+    function vendaL(i) { 
+        if(db.produtos[i].qtd > 0) { 
+            db.produtos[i].v_l++; db.produtos[i].qtd--; 
+            db.produtos[i].vazios = (db.produtos[i].vazios || 0) + 1; // Recebe um vazio
+            renderizar(); 
+        } 
     }
     
-    function setarQtd(idx, val) { db.p[idx].qtd = parseInt(val) || 0; atualizar(); }
+    function vendaE(i) { 
+        const p = db.produtos[db.entrega[i].pIdx];
+        if(p.qtd > 0) { p.v_e++; p.qtd--; p.vazios = (p.vazios || 0) + 1; renderizar(); } 
+    }
 
-    // NOVA FUNÇÃO: ZERAR VENDAS SEM PERDER CADASTRO
-    function resetarVendasDia() {
-        if(confirm("Deseja zerar as vendas de hoje? Isso não apagará seus produtos nem clientes, apenas o faturamento e as contagens do dia.")) {
-            db.p.forEach(p => {
-                p.v_loja = 0;
-                p.v_ent = 0;
-                p.v_ata_total = 0;
-                p.furos = 0;
-                p.vencidos = 0;
-            });
-            atualizar();
+    function vendaA(i) {
+        const q = parseInt(document.getElementById(`q_a_${i}`).value);
+        const p = db.produtos[db.atacado[i].pIdx];
+        if(q > 0 && p.qtd >= q) { 
+            p.v_a_r += (q * db.atacado[i].preco); p.v_a_q += q; p.qtd -= q; 
+            p.vazios = (p.vazios || 0) + q;
+            renderizar(); 
         }
     }
 
-    function limpezaForcada() {
-        if(confirm("ATENÇÃO: Isso apagará TODOS os produtos, clientes e histórico. Tem certeza?")) {
-            localStorage.clear();
-            location.reload();
+    function addEstoque(i) { 
+        const q = parseInt(document.getElementById(`add_q_${i}`).value); 
+        if(q > 0) { 
+            db.produtos[i].qtd += q; 
+            db.produtos[i].vazios = Math.max(0, (db.produtos[i].vazios || 0) - q); // Sai vazio para encher
+            renderizar(); 
+        } 
+    }
+
+    function mudarVazio(i, v) { db.produtos[i].vazios = Math.max(0, (db.produtos[i].vazios || 0) + v); renderizar(); }
+
+    function perda(i, tipo) {
+        if(db.produtos[i].qtd > 0) {
+            db.produtos[i].qtd--;
+            if(tipo === 'q') db.produtos[i].quebras = (db.produtos[i].quebras || 0) + 1;
+            else db.produtos[i].vencidos = (db.produtos[i].vencidos || 0) + 1;
+            renderizar();
         }
     }
 
-    atualizar();
+    function ajustarEstoque(i, v) { if(db.produtos[i].qtd + v >= 0) { db.produtos[i].qtd += v; renderizar(); } }
+
+    function zerarVendas() { 
+        if(confirm("Zerar hoje? (Vazios e Estoque continuam)")) { 
+            db.produtos.forEach(p => {p.v_l=0; p.v_e=0; p.v_a_r=0; p.v_a_q=0; p.quebras=0; p.vencidos=0;}); renderizar(); 
+        } 
+    }
+
+    function gerarRelatorio() {
+        const corpo = document.getElementById('corpo-planilha'); corpo.innerHTML = '';
+        document.getElementById('data-pdf').innerText = new Date().toLocaleString();
+        db.produtos.forEach(p => {
+            const sub = (p.v_l*p.pL + p.v_e*p.pE + p.v_a_r);
+            corpo.innerHTML += `<tr><td>${p.nome}</td><td>${p.v_l}</td><td>${p.v_e}</td><td>${p.v_a_q}</td><td>${p.quebras || 0}</td><td>${p.vencidos || 0}</td><td>${p.vazios || 0}</td><td>${p.qtd}</td><td>R$ ${sub.toFixed(2)}</td></tr>`;
+        });
+        window.print();
+    }
+
+    renderizar();
 </script>
 </body>
 </html>
