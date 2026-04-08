@@ -2,44 +2,42 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Versão Estável</title>
+    <title>Água do Amigo - Gestão 360</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 10px; background: #f0f2f5; }
-        .container { background: #fff; max-width: 480px; margin: auto; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #007bff; font-size: 20px; }
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 10px; background: #f4f7f6; color: #333; }
+        .container { max-width: 500px; margin: auto; background: #fff; padding: 15px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         
-        /* Abas */
-        .abas { display: flex; background: #ddd; border-radius: 8px; padding: 4px; margin-bottom: 15px; gap: 2px; }
-        .aba { flex: 1; padding: 12px 2px; text-align: center; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 11px; color: #555; }
-        .aba.active { background: #007bff; color: white; }
+        h1 { text-align: center; color: #007bff; font-size: 22px; margin-bottom: 20px; }
         
+        .abas { display: flex; gap: 5px; margin-bottom: 20px; background: #eee; padding: 5px; border-radius: 10px; }
+        .aba { flex: 1; padding: 12px 5px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; font-size: 11px; transition: 0.3s; }
+        .aba.active { background: #007bff; color: #fff; }
+
         .secao { display: none; }
         .secao.active { display: block; }
+
+        .caixa-form { background: #f9f9f9; border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         
-        /* Formulários */
-        .form-box { background: #f8f9fa; padding: 12px; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 15px; }
-        input, select { width: 100%; padding: 12px; margin-bottom: 8px; border: 1px solid #bbb; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; }
+        .btn-add { width: 100%; padding: 15px; background: #28a745; color: #fff; font-size: 16px; }
+        .btn-venda { background: #007bff; color: #fff; padding: 10px 15px; }
+        .btn-perda { background: #dc3545; color: #fff; padding: 8px; font-size: 11px; flex: 1; }
+
+        .card { border: 1px solid #eee; padding: 15px; border-radius: 10px; margin-bottom: 10px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .card-entrega { border-left: 5px solid #17a2b8; }
+        .card-atacado { border-left: 5px solid #fd7e14; }
+        .card-estoque { border-left: 5px solid #343a40; }
+
+        .flex-btn { display: flex; justify-content: space-between; align-items: center; }
+        .perda-row { display: flex; gap: 5px; margin-top: 10px; }
         
-        /* Botões */
-        button { cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: 0.1s; active { transform: scale(0.95); } }
-        .btn-green { width: 100%; padding: 15px; background: #28a745; color: white; font-size: 16px; margin-top: 5px; }
-        .btn-blue { background: #007bff; color: white; padding: 12px 20px; }
-        .btn-red { background: #dc3545; color: white; padding: 12px 20px; }
+        .total-dia { background: #222; color: #fff; padding: 20px; border-radius: 12px; text-align: center; margin-top: 20px; }
+        .valor-total { display: block; font-size: 32px; color: #44ff7e; font-weight: bold; }
         
-        /* Listas e Cards */
-        .item-lista { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #fff; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .card-cli { border: 1px solid #ddd; padding: 15px; margin-bottom: 12px; border-radius: 8px; background: #fff; border-left: 6px solid #007bff; }
-        .tag { background: #e7f3ff; color: #007bff; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        
-        .total-card { background: #1c1e21; color: white; padding: 20px; border-radius: 10px; text-align: center; margin-top: 20px; }
-        .total-valor { font-size: 30px; color: #44ff7e; display: block; }
-        
-        .estoque-controles { display: flex; align-items: center; gap: 10px; }
-        .input-qtd { width: 60px !important; text-align: center; margin: 0 !important; font-weight: bold; }
-        
-        .perda-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .btn-perda { font-size: 10px; background: #fff; border: 1px solid #dc3545; color: #dc3545; padding: 5px; }
+        .badge { background: #007bff; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; }
+        .input-mini { width: 70px !important; text-align: center; margin: 0 5px !important; }
     </style>
 </head>
 <body>
@@ -48,150 +46,208 @@
     <h1>💧 Água do Amigo</h1>
 
     <div class="abas">
-        <div class="aba active" onclick="trocar('v', this)">LOJA</div>
-        <div class="aba" onclick="trocar('a', this)">ATACADO</div>
-        <div class="aba" onclick="trocar('f', this)">ENTREGA</div>
-        <div class="aba" onclick="trocar('e', this)">ESTOQUE</div>
+        <div class="aba active" onclick="guia('loja', this)">LOJA</div>
+        <div class="aba" onclick="guia('atacado', this)">ATACADO</div>
+        <div class="aba" onclick="guia('entrega', this)">ENTREGA</div>
+        <div class="aba" onclick="guia('estoque', this)">ESTOQUE</div>
     </div>
 
-    <div id="v" class="secao active">
-        <div class="form-box">
+    <div id="loja" class="secao active">
+        <div class="caixa-form">
+            <strong>Cadastrar Nova Água:</strong>
             <input type="text" id="p_nome" placeholder="Marca (Ex: Indaiá)">
-            <input type="number" id="p_loja" placeholder="Preço Loja (R$)">
-            <input type="number" id="p_ata" placeholder="Preço Atacado (R$)">
-            <input type="number" id="p_ent" placeholder="Preço Entrega (R$)">
-            <button class="btn-green" onclick="addP()">SALVAR PRODUTO</button>
+            <input type="number" id="p_preco_loja" placeholder="Preço Loja (Ex: 12)">
+            <input type="number" id="p_preco_ent" placeholder="Preço Entrega (Ex: 15)">
+            <button class="btn-add" onclick="cadastrarProduto()">SALVAR PRODUTO</button>
         </div>
-        <div id="lista_p"></div>
-        <div class="total-card">VENDAS DE HOJE<span class="total-valor" id="res_total">R$ 0,00</span></div>
+        <div id="lista_loja"></div>
+        <div class="total-dia">TOTAL VENDIDO HOJE<span class="valor-total" id="v_total_geral">R$ 0,00</span></div>
     </div>
 
-    <div id="a" class="secao">
-        <div class="form-box">
-            <input type="text" id="ata_nome" placeholder="Nome do Cliente Atacado">
-            <select id="ata_select"></select>
-            <button class="btn-green" style="background:#e67e22" onclick="addCAta()">CADASTRAR CLIENTE ATACADO</button>
+    <div id="atacado" class="secao">
+        <div class="caixa-form">
+            <strong>Novo Cliente de Atacado:</strong>
+            <input type="text" id="a_cliente" placeholder="Nome do Cliente">
+            <select id="a_select_p"></select>
+            <input type="number" id="a_preco_cli" placeholder="Preço p/ este cliente (Ex: 9.50)">
+            <button class="btn-add" style="background:#fd7e14" onclick="cadastrarAtacado()">SALVAR CLIENTE</button>
         </div>
         <div id="lista_atacado"></div>
     </div>
 
-    <div id="f" class="secao">
-        <div class="form-box">
-            <input type="text" id="c_nome" placeholder="Nome do Cliente">
-            <input type="text" id="c_end" placeholder="Endereço">
-            <select id="c_select"></select>
-            <button class="btn-green" style="background:#17a2b8" onclick="addC()">CADASTRAR CLIENTE ENTREGA</button>
+    <div id="entrega" class="secao">
+        <div class="caixa-form">
+            <strong>Novo Cliente Entrega:</strong>
+            <input type="text" id="e_nome" placeholder="Nome">
+            <input type="text" id="e_end" placeholder="Endereço">
+            <select id="e_select_p"></select>
+            <button class="btn-add" style="background:#17a2b8" onclick="cadastrarEntrega()">SALVAR CLIENTE</button>
         </div>
-        <div id="lista_c"></div>
+        <div id="lista_entrega"></div>
     </div>
 
-    <div id="e" class="secao">
-        <h3 style="text-align:center">Pátio e Perdas</h3>
+    <div id="estoque" class="secao">
+        <h3 style="text-align:center">Controle de Pátio e Perdas</h3>
         <div id="lista_estoque"></div>
     </div>
 
-    <div style="margin-top:30px; border-top: 1px solid #ddd; padding-top: 15px; text-align: center;">
-        <button onclick="window.print()" style="background:#000; color:#fff; padding: 10px 20px;">📄 RELATÓRIO PDF</button>
-        <br><br>
-        <button onclick="resetarVendas()" style="color:blue; background:none; text-decoration:underline;">Zerar vendas do dia</button>
-        <br><br>
-        <button onclick="limpezaTotal()" style="color:red; background:none; text-decoration:underline; font-size:11px;">⚠️ LIMPEZA TOTAL (Se nada funcionar, clique aqui)</button>
+    <div style="text-align:center; margin-top:20px;">
+        <button onclick="window.print()" style="background:#000; color:#fff; padding:12px; width:100%; border-radius:8px;">📄 GERAR RELATÓRIO</button>
+        <button onclick="limpezaForcada()" style="color:red; background:none; margin-top:15px; font-size:12px; text-decoration:underline;">⚠️ Limpar tudo e reiniciar sistema</button>
     </div>
 </div>
 
 <script>
-    // Inicialização segura do banco de dados
-    let d = { p: [], c: [], c_ata: [] };
-    
-    function carregarDados() {
-        const salvo = localStorage.getItem('AGUA_SISTEMA_V6');
-        if (salvo) {
-            try {
-                d = JSON.parse(salvo);
-            } catch (e) {
-                console.error("Erro ao carregar dados");
-            }
-        }
-    }
+    // Banco de dados (p=produtos, a=atacado, c=clientes)
+    let db = JSON.parse(localStorage.getItem('AGUA_DB_V7')) || { p: [], a: [], c: [] };
 
-    function trocar(id, el) {
+    function guia(id, el) {
         document.querySelectorAll('.secao').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.aba').forEach(a => a.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         el.classList.add('active');
-        render();
+        atualizar();
     }
 
-    function render() {
-        localStorage.setItem('AGUA_SISTEMA_V6', JSON.stringify(d));
+    function atualizar() {
+        localStorage.setItem('AGUA_DB_V7', JSON.stringify(db));
         
-        const lp = document.getElementById('lista_p'), la = document.getElementById('lista_atacado');
-        const lc = document.getElementById('lista_c'), le = document.getElementById('lista_estoque');
-        const selA = document.getElementById('ata_select'), selC = document.getElementById('c_select');
-        
-        lp.innerHTML = la.innerHTML = lc.innerHTML = le.innerHTML = '';
-        selA.innerHTML = selC.innerHTML = '<option value="">Selecione a Água...</option>';
-        
-        let somaTotal = 0;
+        const lLoja = document.getElementById('lista_loja'), lAta = document.getElementById('lista_atacado');
+        const lEnt = document.getElementById('lista_entrega'), lEst = document.getElementById('lista_estoque');
+        const selA = document.getElementById('a_select_p'), selE = document.getElementById('e_select_p');
 
-        // Renderização das Marcas de Água
-        d.p.forEach((i, idx) => {
-            somaTotal += (i.vendas * i.pl) + (i.entregas * i.pe) + (i.atacado * i.pa);
+        lLoja.innerHTML = lAta.innerHTML = lEnt.innerHTML = lEst.innerHTML = '';
+        selA.innerHTML = selE.innerHTML = '<option value="">Selecione a Água...</option>';
 
-            lp.innerHTML += `<div class="item-lista">
-                <div><b>${i.n}</b><br><small>Estoque: ${i.cheios}</small></div>
-                <button class="btn-blue" onclick="vL(${idx})">VENDER +1</button>
+        let faturamento = 0;
+
+        // Render Produtos
+        db.p.forEach((i, idx) => {
+            faturamento += (i.v_loja * i.pLoja) + (i.v_ent * i.pEnt) + (i.v_ata_total);
+
+            lLoja.innerHTML += `<div class="card flex-btn">
+                <div><b>${i.n}</b><br><small>Loja: R$ ${i.pLoja.toFixed(2)}</small></div>
+                <div><span class="badge">Estoque: ${i.qtd}</span> <button class="btn-venda" onclick="vendaLoja(${idx})">+1</button></div>
             </div>`;
 
-            le.innerHTML += `<div class="card-cli" style="border-left-color:#000">
-                <div style="display:flex; justify-content:space-between; align-items:center">
+            lEst.innerHTML += `<div class="card card-estoque">
+                <div class="flex-btn">
                     <b>${i.n}</b>
-                    <div class="estoque-controles">
-                        <button class="btn-red" style="padding:5px 12px" onclick="mudaEst(${idx},-1)">-</button>
-                        <input type="number" class="input-qtd" value="${i.cheios}" onchange="digitaEst(${idx},this.value)">
-                        <button class="btn-blue" style="padding:5px 12px" onclick="mudaEst(${idx},1)">+</button>
+                    <div>
+                        <button onclick="mudarQtd(${idx}, -1)">-</button>
+                        <input type="number" class="input-mini" value="${i.qtd}" onchange="setarQtd(${idx}, this.value)">
+                        <button onclick="mudarQtd(${idx}, 1)">+</button>
                     </div>
                 </div>
-                <div class="perda-grid">
-                    <button class="btn-perda" onclick="addPerda(${idx},'f')">🚩 FURO (${i.furos||0})</button>
-                    <button class="btn-perda" onclick="addPerda(${idx},'v')">⌛ VENCIDA (${i.vencidos||0})</button>
+                <div class="perda-row">
+                    <button class="btn-perda" onclick="perda(${idx}, 'f')">🚩 FURADO (${i.furos})</button>
+                    <button class="btn-perda" onclick="perda(${idx}, 'v')">⌛ VENCIDO (${i.vencidos})</button>
                 </div>
             </div>`;
 
             selA.innerHTML += `<option value="${idx}">${i.n}</option>`;
-            selC.innerHTML += `<option value="${idx}">${i.n}</option>`;
+            selE.innerHTML += `<option value="${idx}">${i.n}</option>`;
         });
 
-        // Renderização Clientes Atacado
-        d.c_ata.forEach((cli, idx) => {
-            const p = d.p[cli.pi];
-            la.innerHTML += `<div class="card-cli" style="border-left-color:#e67e22">
-                <b>${cli.n}</b> <span class="tag">${p ? p.n : '?'}</span>
-                <div style="display:flex; margin-top:10px; gap:8px">
-                    <input type="number" id="in_ata_${idx}" class="input-qtd" placeholder="Qtd" style="width:100% !important; text-align:left">
-                    <button class="btn-green" style="background:#e67e22; margin:0; width:150px" onclick="vA(${idx})">VENDER</button>
+        // Render Atacado (Preço por cliente)
+        db.a.forEach((cli, idx) => {
+            lAta.innerHTML += `<div class="card card-atacado">
+                <b>${cli.nome}</b> <small>(${db.p[cli.pIdx].n})</small><br>
+                <small>Combinado: R$ ${cli.preco.toFixed(2)}</small>
+                <div class="flex-btn" style="margin-top:10px">
+                    <input type="number" id="qtd_ata_${idx}" class="input-mini" placeholder="Qtd" style="width:100px !important; text-align:left">
+                    <button class="btn-venda" style="background:#fd7e14" onclick="vendaAtacado(${idx})">VENDER</button>
                 </div>
             </div>`;
         });
 
-        // Renderização Clientes Entrega
-        d.c.forEach((cli, idx) => {
-            const p = d.p[cli.pi];
-            lc.innerHTML += `<div class="card-cli" style="border-left-color:#17a2b8">
-                <b>${cli.n}</b> <span class="tag">${p ? p.n : '?'}</span><br>
-                <small>📍 ${cli.end}</small><br>
-                <button class="btn-green" style="background:#17a2b8" onclick="vE(${idx})">VENDER +1</button>
+        // Render Entrega
+        db.c.forEach((cli, idx) => {
+            lEnt.innerHTML += `<div class="card card-entrega">
+                <b>${cli.nome}</b> <small>(${db.p[cli.pIdx].n})</small><br>
+                <small>📍 ${cli.end}</small>
+                <button class="btn-add" style="background:#17a2b8; margin-top:10px; padding:8px" onclick="vendaEntrega(${idx})">+1 ENTREGA</button>
             </div>`;
         });
 
-        document.getElementById('res_total').innerText = "R$ " + somaTotal.toFixed(2);
+        document.getElementById('v_total_geral').innerText = "R$ " + faturamento.toFixed(2);
     }
 
-    // FUNÇÕES DE AÇÃO
-    function addP() {
+    // CADASTROS
+    function cadastrarProduto() {
         const n = document.getElementById('p_nome').value;
-        const l = parseFloat(document.getElementById('p_loja').value);
-        const a = parseFloat(document.getElementById('p_ata').value) || 0;
-        const e = parseFloat(document.getElementById('p_ent').value) || 0;
-        if(n && l) {
-            d.p.push({n:n, pl:l, pa:a, pe:e, vendas:0, atacado:0,
+        const pl = parseFloat(document.getElementById('p_preco_loja').value);
+        const pe = parseFloat(document.getElementById('p_preco_ent').value);
+        if(n && pl) {
+            db.p.push({ n, pLoja: pl, pEnt: pe, qtd: 0, v_loja: 0, v_ent: 0, v_ata_total: 0, furos: 0, vencidos: 0 });
+            document.getElementById('p_nome').value = '';
+            atualizar();
+        } else alert("Preencha o nome e preço da loja!");
+    }
+
+    function cadastrarAtacado() {
+        const nome = document.getElementById('a_cliente').value;
+        const pIdx = document.getElementById('a_select_p').value;
+        const preco = parseFloat(document.getElementById('a_preco_cli').value);
+        if(nome && pIdx !== "" && preco) {
+            db.a.push({ nome, pIdx: parseInt(pIdx), preco });
+            document.getElementById('a_cliente').value = '';
+            atualizar();
+        } else alert("Preencha todos os campos do atacado!");
+    }
+
+    function cadastrarEntrega() {
+        const nome = document.getElementById('e_nome').value;
+        const end = document.getElementById('e_end').value;
+        const pIdx = document.getElementById('e_select_p').value;
+        if(nome && pIdx !== "") {
+            db.c.push({ nome, end, pIdx: parseInt(pIdx) });
+            document.getElementById('e_nome').value = '';
+            atualizar();
+        } else alert("Preencha nome e escolha a água!");
+    }
+
+    // VENDAS E ESTOQUE
+    function vendaLoja(idx) {
+        if(db.p[idx].qtd > 0) { db.p[idx].v_loja++; db.p[idx].qtd--; atualizar(); } else alert("Sem estoque!");
+    }
+
+    function vendaAtacado(idx) {
+        const q = parseInt(document.getElementById(`qtd_ata_${idx}`).value);
+        const cli = db.a[idx];
+        const prod = db.p[cli.pIdx];
+        if(q > 0 && prod.qtd >= q) {
+            prod.v_ata_total += (q * cli.preco);
+            prod.qtd -= q;
+            atualizar();
+        } else alert("Quantidade inválida ou sem estoque!");
+    }
+
+    function vendaEntrega(idx) {
+        const cli = db.c[idx];
+        const prod = db.p[cli.pIdx];
+        if(prod.qtd > 0) { prod.v_ent++; prod.qtd--; atualizar(); } else alert("Sem estoque!");
+    }
+
+    function perda(idx, tipo) {
+        if(db.p[idx].qtd > 0) {
+            if(tipo === 'f') db.p[idx].furos++; else db.p[idx].vencidos++;
+            db.p[idx].qtd--;
+            atualizar();
+        }
+    }
+
+    function mudarQtd(idx, val) { db.p[idx].qtd += val; atualizar(); }
+    function setarQtd(idx, val) { db.p[idx].qtd = parseInt(val) || 0; atualizar(); }
+
+    function limpezaForcada() {
+        if(confirm("Isso apagará todos os dados. Confirma?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    atualizar();
+</script>
+</body>
+</html>
