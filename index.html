@@ -174,78 +174,237 @@
         if(d.p[idx].cheios > 0) {
             d.p[idx].vendas++;
             d.p[idx].cheios--;
-            render();
-        } else { alert("Sem estoque de " + d.p[idx].n); }
-    }
-
-    function venderAtacado(cliIdx) {
-        const input = document.getElementById(`qtd_ata_input_${cliIdx}`);
-        const qtd = parseInt(input.value);
-        const prodIdx = d.c_ata[cliIdx].pi;
+            render();<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Água do Amigo - Gestão 360º</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 10px; background: #f0f2f5; color: #1c1e21; }
+        .container { background: #fff; max-width: 480px; margin: auto; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        h1 { text-align: center; color: #007bff; margin-bottom: 20px; font-size: 22px; }
+        .abas { display: flex; background: #eee; border-radius: 8px; padding: 4px; margin-bottom: 20px; gap: 2px; }
+        .aba { flex: 1; padding: 10px 2px; text-align: center; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 10px; transition: 0.2s; text-transform: uppercase; }
+        .aba.active { background: #007bff; color: white; }
+        .secao { display: none; }
+        .secao.active { display: block; }
+        .form-box { background: #f8f9fa; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        button { cursor: pointer; border: none; border-radius: 6px; font-weight: bold; }
+        .btn-green { width: 100%; padding: 14px; background: #28a745; color: white; font-size: 15px; }
+        .btn-blue { background: #007bff; color: white; padding: 10px 15px; }
+        .btn-red { background: #dc3545; color: white; padding: 10px 15px; }
+        .item-lista { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: #fafbfc; border-radius: 8px; margin-bottom: 10px; }
+        .card-cli { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 8px; background: #fff; border-left: 6px solid #007bff; }
+        .card-ata { border-left-color: #e67e22; }
+        .info-p { font-size: 12px; color: #606770; margin: 4px 0; }
+        .tag-agua { background: #e7f3ff; color: #007bff; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+        .total-card { background: #1c1e21; color: white; padding: 20px; border-radius: 10px; text-align: center; margin-top: 15px; }
+        .total-valor { font-size: 32px; color: #44ff7e; display: block; font-weight: bold; }
+        .input-qtd { width: 80px !important; text-align: center; font-weight: bold; margin: 0 5px; font-size: 18px !important; }
+        .badge-estoque { background: #000; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+        .perda-box { background: #fff5f5; border: 1px solid #feb2b2; padding: 10px; border-radius: 8px; margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .perda-btn { font-size: 11px; padding: 5px; background: #fff; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; }
         
-        if(qtd > 0) {
-            if(d.p[prodIdx].cheios >= qtd) {
-                d.p[prodIdx].atacado += qtd;
-                d.p[prodIdx].cheios -= qtd;
-                input.value = '';
-                render();
-            } else { alert("Estoque insuficiente! Você só tem " + d.p[prodIdx].cheios); }
-        } else { alert("Digite a quantidade!"); }
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="no-print">💧 Água do Amigo</h1>
+    
+    <div class="abas no-print">
+        <div class="aba active" onclick="trocar('v', this)">LOJA</div>
+        <div class="aba" onclick="trocar('a', this)">ATACADO</div>
+        <div class="aba" onclick="trocar('f', this)">ENTREGA</div>
+        <div class="aba" onclick="trocar('e', this)">ESTOQUE</div>
+    </div>
+
+    <div id="v" class="secao active">
+        <div class="form-box no-print">
+            <strong>Cadastrar Marca/Água:</strong>
+            <input type="text" id="p_nome" placeholder="Ex: Indaiá 20L">
+            <input type="number" id="p_loja" placeholder="Preço Loja">
+            <input type="number" id="p_ata" placeholder="Preço Atacado">
+            <input type="number" id="p_ent" placeholder="Preço Entrega">
+            <button class="btn-green" onclick="addP()">CADASTRAR PRODUTO</button>
+        </div>
+        <div id="lista_p"></div>
+        <div class="total-card">FECHAMENTO DO DIA<span class="total-valor" id="res_total">R$ 0,00</span></div>
+    </div>
+
+    <div id="a" class="secao">
+        <div class="form-box no-print">
+            <strong>Novo Cliente Atacado:</strong>
+            <input type="text" id="ata_nome" placeholder="Nome do Cliente/Empresa">
+            <select id="ata_select"></select>
+            <button class="btn-green" style="background:#e67e22" onclick="addCAta()">SALVAR CLIENTE</button>
+        </div>
+        <div id="lista_atacado"></div>
+    </div>
+
+    <div id="f" class="secao">
+        <div class="form-box no-print">
+            <strong>Novo Cliente Entrega:</strong>
+            <input type="text" id="c_nome" placeholder="Nome">
+            <input type="text" id="c_end" placeholder="Endereço">
+            <select id="c_select"></select>
+            <button class="btn-green" style="background:#17a2b8" onclick="addC()">SALVAR CLIENTE</button>
+        </div>
+        <div id="lista_c"></div>
+    </div>
+
+    <div id="e" class="secao">
+        <h3 style="margin:0">Controle de Estoque e Perdas</h3>
+        <p style="font-size:11px; color:gray; margin-bottom:15px;">Aqui você adiciona o que chegou e registra furos/vencidos.</p>
+        <div id="lista_estoque_cheios"></div>
+        <div id="aviso_estoque" style="display:none; text-align:center; padding:20px; color:red;">
+            Nenhum produto cadastrado! Vá na aba LOJA primeiro.
+        </div>
+    </div>
+
+    <div class="no-print" style="margin-top: 20px; text-align: center;">
+        <button onclick="window.print()" style="width:100%; padding:15px; background:#000; color:#fff; border-radius: 6px;">📄 GERAR RELATÓRIO PDF</button>
+        <button onclick="resetarCaixa()" style="color:red; background:none; border:none; margin-top:20px; text-decoration:underline;">Zerar Movimentação do Dia</button>
+    </div>
+</div>
+
+<script>
+    let d = JSON.parse(localStorage.getItem('AGUA_SISTEMA_V5')) || { p: [], c: [], c_ata: [] };
+
+    function trocar(id, el) {
+        document.querySelectorAll('.secao').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.aba').forEach(a => a.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        el.classList.add('active');
+        render();
     }
 
-    function venderEntrega(cliIdx) {
-        const prodIdx = d.c[cliIdx].pi;
-        if(d.p[prodIdx].cheios > 0) {
-            if(d.c[cliIdx].pts >= 10) {
-                d.c[cliIdx].pts = 0;
-            } else {
-                d.c[cliIdx].pts++;
-            }
-            d.p[prodIdx].entregas++;
-            d.p[prodIdx].cheios--;
+    function render() {
+        localStorage.setItem('AGUA_SISTEMA_V5', JSON.stringify(d));
+        
+        const lp = document.getElementById('lista_p'), la = document.getElementById('lista_atacado');
+        const lc = document.getElementById('lista_c'), le = document.getElementById('lista_estoque_cheios');
+        const selA = document.getElementById('ata_select'), selC = document.getElementById('c_select');
+        const aviso = document.getElementById('aviso_estoque');
+        
+        lp.innerHTML = ''; la.innerHTML = ''; lc.innerHTML = ''; le.innerHTML = '';
+        selA.innerHTML = selC.innerHTML = '<option value="">Qual água?</option>';
+        
+        if(d.p.length === 0) aviso.style.display = 'block'; else aviso.style.display = 'none';
+
+        let somaTotal = 0;
+
+        d.p.forEach((i, idx) => {
+            let totalI = (i.vendas * i.pl) + (i.entregas * i.pe) + (i.atacado * i.pa);
+            somaTotal += totalI;
+
+            // LOJA
+            lp.innerHTML += `<div class="item-lista">
+                <div><b>${i.n}</b> <span class="badge-estoque">${i.cheios} un</span><br><small>R$ ${i.pl.toFixed(2)}</small></div>
+                <button class="btn-blue" onclick="vL(${idx})">+1</button>
+            </div>`;
+
+            // ESTOQUE + PERDAS
+            le.innerHTML += `<div class="card-cli" style="border-left-color:#000">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <b>${i.n}</b>
+                    <div style="display:flex; align-items:center">
+                        <button class="btn-red" onclick="mudaEst(${idx},-1)">-</button>
+                        <input type="number" class="input-qtd" value="${i.cheios}" onchange="digitaEst(${idx},this.value)">
+                        <button class="btn-blue" onclick="mudaEst(${idx},1)">+</button>
+                    </div>
+                </div>
+                <div class="perda-box">
+                    <button class="perda-btn" onclick="addPerda(${idx}, 'f')">🚩 MARCAR FURADA (${i.furos || 0})</button>
+                    <button class="perda-btn" onclick="addPerda(${idx}, 'v')">⌛ MARCAR VENCIDA (${i.vencidos || 0})</button>
+                </div>
+            </div>`;
+
+            selA.innerHTML += `<option value="${idx}">${i.n}</option>`;
+            selC.innerHTML += `<option value="${idx}">${i.n}</option>`;
+        });
+
+        // ATACADO (Cards)
+        d.c_ata.forEach((cli, idx) => {
+            la.innerHTML += `<div class="card-cli card-ata">
+                <b>${cli.n}</b> <span class="tag-agua">${d.p[cli.pi].n}</span>
+                <div style="display:flex; margin-top:10px; gap:5px;">
+                    <input type="number" id="in_ata_${idx}" class="input-qtd" placeholder="Qtd">
+                    <button class="btn-green" style="background:#e67e22; flex:1" onclick="vA(${idx})">VENDER</button>
+                </div>
+            </div>`;
+        });
+
+        // ENTREGA (Cards)
+        d.c.forEach((cli, idx) => {
+            let p = cli.pts >= 10;
+            lc.innerHTML += `<div class="card-cli">
+                <b>${cli.n}</b> <span class="tag-agua">${d.p[cli.pi].n}</span>
+                <div class="info-p">📍 ${cli.end} | Fidelidade: ${cli.pts}/10</div>
+                <button class="btn-green" style="width:100%; background:${p?'#ffc107':'#17a2b8'}" onclick="vE(${idx})">
+                    ${p ? '🎁 ENTREGAR BRINDE' : '+1 ENTREGA'}
+                </button>
+            </div>`;
+        });
+
+        document.getElementById('res_total').innerText = "R$ " + somaTotal.toFixed(2).replace('.',',');
+    }
+
+    // Funções
+    function vL(idx) { 
+        if(d.p[idx].cheios > 0) { d.p[idx].vendas++; d.p[idx].cheios--; render(); } 
+        else alert("Estoque vazio!"); 
+    }
+    
+    function vA(cIdx) {
+        let q = parseInt(document.getElementById(`in_ata_${cIdx}`).value);
+        let pIdx = d.c_ata[cIdx].pi;
+        if(q > 0 && d.p[pIdx].cheios >= q) {
+            d.p[pIdx].atacado += q; d.p[pIdx].cheios -= q; render();
+        } else alert("Estoque insuficiente!");
+    }
+
+    function vE(cIdx) {
+        let pIdx = d.c[cIdx].pi;
+        if(d.p[pIdx].cheios > 0) {
+            if(d.c[cIdx].pts >= 10) d.c[cIdx].pts = 0; else d.c[cIdx].pts++;
+            d.p[pIdx].entregas++; d.p[pIdx].cheios--; render();
+        } else alert("Estoque vazio!");
+    }
+
+    function addPerda(idx, tipo) {
+        if(d.p[idx].cheios > 0) {
+            if(tipo === 'f') d.p[idx].furos = (d.p[idx].furos || 0) + 1;
+            else d.p[idx].vencidos = (d.p[idx].vencidos || 0) + 1;
+            d.p[idx].cheios--; // Tira do estoque de cheios pois o galão "se perdeu"
             render();
-        } else { alert("Sem estoque de " + d.p[prodIdx].n); }
+        } else alert("Não há estoque para marcar perda!");
     }
 
-    // Cadastros
     function addP() {
-        let n = document.getElementById('p_nome').value;
-        let l = parseFloat(document.getElementById('p_loja').value);
-        let a = parseFloat(document.getElementById('p_ata').value) || 0;
-        let e = parseFloat(document.getElementById('p_ent').value);
+        let n = document.getElementById('p_nome').value, l = parseFloat(document.getElementById('p_loja').value);
+        let a = parseFloat(document.getElementById('p_ata').value) || 0, e = parseFloat(document.getElementById('p_ent').value);
         if(n && l && e) {
-            d.p.push({n:n, pl:l, pa:a, pe:e, vendas:0, atacado:0, entregas:0, cheios:0});
-            document.getElementById('p_nome').value='';
-            document.getElementById('p_loja').value='';
+            d.p.push({n:n, pl:l, pa:a, pe:e, vendas:0, atacado:0, entregas:0, cheios:0, furos:0, vencidos:0});
             render();
-        } else { alert("Preencha os dados da água!"); }
+        }
     }
 
     function addCAta() {
-        let n = document.getElementById('ata_nome').value;
-        let pi = document.getElementById('ata_select').value;
-        if(n && pi !== "") {
-            d.c_ata.push({n:n, pi:parseInt(pi)});
-            document.getElementById('ata_nome').value='';
-            render();
-        } else { alert("Nome e Água são obrigatórios!"); }
+        let n = document.getElementById('ata_nome').value, pi = document.getElementById('ata_select').value;
+        if(n && pi) { d.c_ata.push({n:n, pi:parseInt(pi)}); render(); }
     }
 
     function addC() {
-        let n = document.getElementById('c_nome').value;
-        let ed = document.getElementById('c_end').value;
-        let pi = document.getElementById('c_select').value;
-        if(n && pi !== "") {
-            d.c.push({n:n, end:ed, pi:parseInt(pi), pts:0});
-            document.getElementById('c_nome').value='';
-            document.getElementById('c_end').value='';
-            render();
-        } else { alert("Nome e Água são obrigatórios!"); }
+        let n = document.getElementById('c_nome').value, ed = document.getElementById('c_end').value, pi = document.getElementById('c_select').value;
+        if(n && pi) { d.c.push({n:n, end:ed, pi:parseInt(pi), pts:0}); render(); }
     }
 
     function mudaEst(idx, q) { d.p[idx].cheios += q; render(); }
     function digitaEst(idx, v) { d.p[idx].cheios = parseInt(v) || 0; render(); }
-    function resetarCaixa() { if(confirm("Deseja zerar as vendas do dia? O estoque atual será mantido.")) { d.p.forEach(x => { x.vendas=0; x.atacado=0; x.entregas=0; }); render(); } }
+    function resetarCaixa() { if(confirm("Zerar vendas? (Estoque e perdas ficam)")) { d.p.forEach(x => { x.vendas=0; x.atacado=0; x.entregas=0; }); render(); } }
 
     render();
 </script>
