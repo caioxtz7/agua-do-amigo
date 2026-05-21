@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão v23</title>
+    <title>Água do Amigo - Gestão v24</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #f0f2f5; color: #333; }
@@ -17,7 +17,8 @@
         .secao.active { display: block; }
 
         .caixa-form { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        textarea { font-family: inherit; resize: vertical; }
         
         .venda-avulsa { background: #fff3cd; border: 1px solid #ffeeba; padding: 12px; border-radius: 10px; margin-bottom: 15px; }
         .venda-avulsa b { display: block; margin-bottom: 8px; font-size: 13px; color: #856404; }
@@ -34,7 +35,6 @@
         
         .info-vendas { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ddd; font-size: 11px; color: #666; display: flex; flex-wrap: wrap; gap: 8px; }
 
-        /* Estilos dos novos botões de gerenciar */
         .card-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid #f1f1f1; display: flex; justify-content: flex-end; gap: 10px; }
         .btn-acao { background: none; border: none; padding: 5px 8px; font-size: 12px; cursor: pointer; border-radius: 4px; }
         .btn-acao.edit { color: #007bff; background: #e7f1ff; }
@@ -66,6 +66,7 @@
         <div class="aba" onclick="guia('atacado', this)">ATACADO</div>
         <div class="aba" onclick="guia('entrega', this)">ENTREGA</div>
         <div class="aba" onclick="guia('estoque', this)">ESTOQUE</div>
+        <div class="aba" onclick="guia('obs', this)" style="background: #fff3cd; color: #856404;">📝 OBS</div>
     </div>
 
     <div id="loja" class="secao active">
@@ -123,6 +124,14 @@
         <div id="lista_estoque"></div>
     </div>
 
+    <div id="obs" class="secao">
+        <div class="caixa-form" style="background: #fff9e6; border-color: #ffeeba;">
+            <strong>📝 Anotações e Observações do Dia:</strong>
+            <p style="font-size: 12px; color: #666; margin: 5px 0 10px 0;">O que você digitar aqui vai aparecer no final do PDF de fechamento.</p>
+            <textarea id="campo_obs" rows="8" placeholder="Ex: Cliente João ficou devendo 1 água... Cadastrado gasto de R$20 de gasolina... Quebra de 1 vasilhame da Indaiá..." oninput="salvarObs()"></textarea>
+        </div>
+    </div>
+
     <div style="margin-top:20px; display: flex; flex-direction: column; gap: 10px;">
         <button onclick="gerarPDF()" style="background:#000; color:#fff; padding:18px; width:100%; font-size: 16px; border-radius:10px;">📄 GERAR PLANILHA DE FECHAMENTO</button>
         <button onclick="zerarVendas()" style="background:none; color:red; padding:10px; text-decoration: underline; font-size: 13px;">Zerar Vendas para Iniciar Novo Dia</button>
@@ -148,12 +157,18 @@
         <tbody id="tabela-corpo"></tbody>
     </table>
     <h3 style="text-align:right; margin-top:20px;">TOTAL GERAL: <span id="pdf-total-geral"></span></h3>
+    
+    <div id="pdf-obs-container" style="margin-top: 30px; border: 1px dashed #333; padding: 15px; border-radius: 6px; background: #fafafa;">
+        <strong>📝 Observações do Fechamento:</strong>
+        <p id="pdf-obs" style="margin: 8px 0 0 0; white-space: pre-wrap; font-size: 13px; color: #111; line-height: 1.4;"></p>
+    </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('AGUA_V21')) || { produtos: [], atacado: [], entrega: [] };
+    let db = JSON.parse(localStorage.getItem('AGUA_V21')) || { produtos: [], atacado: [], entrega: [], obs: "" };
 
-    // Correção para produtos antigos 
+    // Correções de segurança para bancos antigos
+    if (db.obs === undefined) db.obs = "";
     db.produtos.forEach(p => { if(p.estoque_inicial === undefined) p.estoque_inicial = p.qtd; });
 
     function guia(id, el) {
@@ -237,7 +252,15 @@
                 </div>`;
             }
         });
+        
+        document.getElementById('campo_obs').value = db.obs || '';
         document.getElementById('faturamento_hoje').innerText = "R$ " + totalFaturamento.toFixed(2);
+    }
+
+    /* ---- Função da Aba de Observações ---- */
+    function salvarObs() {
+        db.obs = document.getElementById('campo_obs').value;
+        localStorage.setItem('AGUA_V21', JSON.stringify(db));
     }
 
     /* ---- Funções de Salvar (Criação) ---- */
@@ -254,71 +277,43 @@
         if(n && p!=="") { db.entrega.push({nome: n, end: e, pIdx: parseInt(p)}); document.getElementById('e_nome').value=''; document.getElementById('e_end').value=''; renderizar(); } 
     }
     
-    /* ---- Novas Funções de Editar e Excluir ---- */
+    /* ---- Funções de Editar e Excluir ---- */
     function editarProduto(i) {
         let p = db.produtos[i];
-        let nome = prompt("Nome do Produto:", p.nome);
-        if(nome === null) return;
-        let pL = prompt("Preço Balcão (R$):", p.pL);
-        if(pL === null) return;
-        let pE = prompt("Preço Entrega (R$):", p.pE);
-        if(pE === null) return;
-
-        p.nome = nome || p.nome;
-        p.pL = parseFloat(pL) || 0;
-        p.pE = parseFloat(pE) || 0;
-        renderizar();
+        let nome = prompt("Nome do Produto:", p.nome); if(nome === null) return;
+        let pL = prompt("Preço Balcão (R$):", p.pL); if(pL === null) return;
+        let pE = prompt("Preço Entrega (R$):", p.pE); if(pE === null) return;
+        p.nome = nome || p.nome; p.pL = parseFloat(pL) || 0; p.pE = parseFloat(pE) || 0; renderizar();
     }
-
     function excluirProduto(i) {
-        if(confirm("Deseja mesmo excluir este produto? ATENÇÃO: Clientes de Atacado e Entrega vinculados a ele também serão excluídos.")) {
+        if(confirm("Deseja mesmo excluir este produto? Clientes vinculados a ele também serão excluídos.")) {
             db.produtos.splice(i, 1);
-            // Atualiza os índices e remove os clientes vinculados ao produto deletado para não dar erro
             db.atacado = db.atacado.filter(c => c.pIdx !== i).map(c => { if(c.pIdx > i) c.pIdx--; return c; });
             db.entrega = db.entrega.filter(c => c.pIdx !== i).map(c => { if(c.pIdx > i) c.pIdx--; return c; });
             renderizar();
         }
     }
-
     function editarAtacado(i) {
         let c = db.atacado[i];
-        let nome = prompt("Nome do Cliente:", c.nome);
-        if(nome === null) return;
-        let preco = prompt("Preço Combinado (R$):", c.preco);
-        if(preco === null) return;
-
-        c.nome = nome || c.nome;
-        c.preco = parseFloat(preco) || 0;
-        renderizar();
+        let nome = prompt("Nome do Cliente:", c.nome); if(nome === null) return;
+        let preco = prompt("Preço Combinado (R$):", c.preco); if(preco === null) return;
+        c.nome = nome || c.nome; c.preco = parseFloat(preco) || 0; renderizar();
     }
-
-    function excluirAtacado(i) {
-        if(confirm("Excluir este cliente de atacado?")) { db.atacado.splice(i, 1); renderizar(); }
-    }
-
+    function excluirAtacado(i) { if(confirm("Excluir este cliente de atacado?")) { db.atacado.splice(i, 1); renderizar(); } }
     function editarEntrega(i) {
         let c = db.entrega[i];
-        let nome = prompt("Nome do Cliente:", c.nome);
-        if(nome === null) return;
-        let end = prompt("Endereço / Rua:", c.end);
-        if(end === null) return;
-
-        c.nome = nome || c.nome;
-        c.end = end || c.end;
-        renderizar();
+        let nome = prompt("Nome do Cliente:", c.nome); if(nome === null) return;
+        let end = prompt("Endereço / Rua:", c.end); if(end === null) return;
+        c.nome = nome || c.nome; c.end = end || c.end; renderizar();
     }
-
-    function excluirEntrega(i) {
-        if(confirm("Excluir este cliente de entrega?")) { db.entrega.splice(i, 1); renderizar(); }
-    }
+    function excluirEntrega(i) { if(confirm("Excluir este cliente de entrega?")) { db.entrega.splice(i, 1); renderizar(); } }
 
     /* ---- Funções de Vendas ---- */
     function vendaL(i) { if(db.produtos[i].qtd > 0) { db.produtos[i].v_l++; db.produtos[i].qtd--; db.produtos[i].vazios++; renderizar(); } }
     function vendaE(i) { const p = db.produtos[db.entrega[i].pIdx]; if(p.qtd > 0) { p.v_e++; p.qtd--; p.vazios++; renderizar(); } }
     function vendaA(i) { const q = parseInt(document.getElementById(`q_a_${i}`).value); const p = db.produtos[db.atacado[i].pIdx]; if(q > 0 && p.qtd >= q) { p.v_a_r += (q * db.atacado[i].preco); p.v_a_q += q; p.qtd -= q; p.vazios += q; renderizar(); } }
     function vendaAvulsa(tipo) {
-        const pIdx = document.getElementById(tipo === 'A' ? 'avulso_a_p' : 'avulso_e_p').value;
-        if(pIdx === "") return;
+        const pIdx = document.getElementById(tipo === 'A' ? 'avulso_a_p' : 'avulso_e_p').value; if(pIdx === "") return;
         const p = db.produtos[pIdx];
         if(tipo==='E') { if(p.qtd>0) { p.v_e++; p.qtd--; p.vazios++; renderizar(); } }
         else { const q = parseInt(document.getElementById('avulso_a_q').value) || 0; if(q>0 && p.qtd>=q) { const pr = parseFloat(prompt("Preço Unitário?", p.pL)); p.v_a_r+=(q*pr); p.v_a_q+=q; p.qtd-=q; p.vazios+=q; renderizar(); } }
@@ -329,25 +324,21 @@
         let n = prompt("Novo valor:", db.produtos[i][c]); 
         if(n!==null) { 
             db.produtos[i][c]=parseInt(n); 
-            if(c === 'qtd' && confirm("Deseja definir este valor também como o Estoque Inicial do dia?")) {
-                db.produtos[i].estoque_inicial = parseInt(n);
-            }
+            if(c === 'qtd' && confirm("Deseja definir este valor também como o Estoque Inicial do dia?")) { db.produtos[i].estoque_inicial = parseInt(n); }
             renderizar(); 
         } 
     }
-    
     function mudarVazio(i, v) { db.produtos[i].vazios = Math.max(0, (db.produtos[i].vazios || 0) + v); renderizar(); }
     
     function zerarVendas() { 
-        if(confirm("Deseja zerar as vendas do dia? O estoque ATUAL CHEIO virará o ESTOQUE INICIAL do próximo dia.")) { 
-            db.produtos.forEach(p => {
-                p.estoque_inicial = p.qtd; 
-                p.v_l=0; p.v_e=0; p.v_a_r=0; p.v_a_q=0; p.vazios=0;
-            }); 
+        if(confirm("Deseja zerar as vendas do dia? O estoque ATUAL virará o INICIAL do próximo dia e as OBSERVAÇÕES serão limpas.")) { 
+            db.produtos.forEach(p => { p.estoque_inicial = p.qtd; p.v_l=0; p.v_e=0; p.v_a_r=0; p.v_a_q=0; p.vazios=0; }); 
+            db.obs = ''; 
             renderizar(); 
         } 
     }
 
+    /* ---- Geração do Relatório ---- */
     function gerarPDF() {
         const corpo = document.getElementById('tabela-corpo');
         corpo.innerHTML = '';
@@ -372,6 +363,16 @@
         });
 
         document.getElementById('pdf-total-geral').innerText = "R$ " + totalGeral.toFixed(2);
+        
+        // Verifica se há observações para exibir no PDF
+        const containerObs = document.getElementById('pdf-obs-container');
+        if(db.obs && db.obs.trim() !== "") {
+            document.getElementById('pdf-obs').innerText = db.obs;
+            containerObs.style.display = "block";
+        } else {
+            containerObs.style.display = "none";
+        }
+
         window.print();
     }
 
