@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão v24</title>
+    <title>Água do Amigo - Gestão v25</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #f0f2f5; color: #333; }
@@ -49,7 +49,7 @@
             body * { visibility: hidden; }
             #relatorio-area, #relatorio-area * { visibility: visible; }
             #relatorio-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
             th, td { border: 1px solid #333; padding: 8px; text-align: center; }
             th { background: #eee; }
             .no-print { display: none; }
@@ -128,7 +128,7 @@
         <div class="caixa-form" style="background: #fff9e6; border-color: #ffeeba;">
             <strong>📝 Anotações e Observações do Dia:</strong>
             <p style="font-size: 12px; color: #666; margin: 5px 0 10px 0;">O que você digitar aqui vai aparecer no final do PDF de fechamento.</p>
-            <textarea id="campo_obs" rows="8" placeholder="Ex: Cliente João ficou devendo 1 água... Cadastrado gasto de R$20 de gasolina... Quebra de 1 vasilhame da Indaiá..." oninput="salvarObs()"></textarea>
+            <textarea id="campo_obs" rows="8" placeholder="Ex: Cliente João ficou devendo 1 água... Cadastrado gasto de R$20 de gasolina..." oninput="salvarObs()"></textarea>
         </div>
     </div>
 
@@ -139,8 +139,10 @@
 </div>
 
 <div id="relatorio-area">
-    <h2 style="text-align:center">Fechamento de Caixa - Água do Amigo</h2>
-    <p id="data-relatorio" style="text-align:center; font-weight:bold"></p>
+    <h2 style="text-align:center; margin-bottom:5px;">Fechamento de Caixa - Água do Amigo</h2>
+    <p id="data-relatorio" style="text-align:center; font-weight:bold; margin-top:0; margin-bottom:20px;"></p>
+    
+    <h3>📦 Resumo Geral de Produtos</h3>
     <table>
         <thead>
             <tr>
@@ -148,7 +150,7 @@
                 <th>Estoque Inicial</th>
                 <th>Balcão</th>
                 <th>Entrega</th>
-                <th>Atacado</th>
+                <th>Atacado Total</th>
                 <th>Estoque Final</th>
                 <th>Vazios Recolhidos</th>
                 <th>Total (R$)</th>
@@ -156,20 +158,40 @@
         </thead>
         <tbody id="tabela-corpo"></tbody>
     </table>
-    <h3 style="text-align:right; margin-top:20px;">TOTAL GERAL: <span id="pdf-total-geral"></span></h3>
+
+    <div id="pdf-atacado-container" style="margin-top: 25px;">
+        <h3>🏢 Detalhamento do Atacado (Por Cliente)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome do Cliente</th>
+                    <th>Produto Adquirido</th>
+                    <th>Preço Un. (R$)</th>
+                    <th>Qtd Comprada</th>
+                    <th>Subtotal (R$)</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-atacado-corpo"></tbody>
+        </table>
+    </div>
+
+    <h3 style="text-align:right; margin-top:20px; font-size: 16px;">TOTAL GERAL DO DIA: <span id="pdf-total-geral"></span></h3>
     
-    <div id="pdf-obs-container" style="margin-top: 30px; border: 1px dashed #333; padding: 15px; border-radius: 6px; background: #fafafa;">
+    <div id="pdf-obs-container" style="margin-top: 25px; border: 1px dashed #333; padding: 12px; border-radius: 6px; background: #fafafa;">
         <strong>📝 Observações do Fechamento:</strong>
         <p id="pdf-obs" style="margin: 8px 0 0 0; white-space: pre-wrap; font-size: 13px; color: #111; line-height: 1.4;"></p>
     </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('AGUA_V21')) || { produtos: [], atacado: [], entrega: [], obs: "" };
+    let db = JSON.parse(localStorage.getItem('AGUA_V21')) || { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0 };
 
-    // Correções de segurança para bancos antigos
+    // Travas de segurança para atualizações de banco de dados antigos
     if (db.obs === undefined) db.obs = "";
+    if (db.v_avulsa_a_q === undefined) db.v_avulsa_a_q = 0;
+    if (db.v_avulsa_a_r === undefined) db.v_avulsa_a_r = 0;
     db.produtos.forEach(p => { if(p.estoque_inicial === undefined) p.estoque_inicial = p.qtd; });
+    db.atacado.forEach(c => { if(c.vendas_hoje === undefined) c.vendas_hoje = 0; });
 
     function guia(id, el) {
         document.querySelectorAll('.secao').forEach(s => s.classList.remove('active'));
@@ -227,7 +249,7 @@
             if (c.nome.toLowerCase().includes(bA)) {
                 lAta.innerHTML += `<div class="card">
                     <div class="flex-row">
-                        <div><b>${c.nome}</b><br><small>${db.produtos[c.pIdx]?.nome} - R$ ${c.preco.toFixed(2)}</small></div>
+                        <div><b>${c.nome}</b><br><small>${db.produtos[c.pIdx]?.nome || 'Produto'} - R$ ${c.preco.toFixed(2)}</small></div>
                         <div style="display:flex; gap:5px"><input type="number" id="q_a_${i}" placeholder="Qtd" style="margin:0; width:60px"><button style="background:#fd7e14; color:white; padding:10px" onclick="vendaA(${i})">VENDER</button></div>
                     </div>
                     <div class="card-footer">
@@ -257,27 +279,26 @@
         document.getElementById('faturamento_hoje').innerText = "R$ " + totalFaturamento.toFixed(2);
     }
 
-    /* ---- Função da Aba de Observações ---- */
     function salvarObs() {
         db.obs = document.getElementById('campo_obs').value;
         localStorage.setItem('AGUA_V21', JSON.stringify(db));
     }
 
-    /* ---- Funções de Salvar (Criação) ---- */
+    /* ---- Funções de Salvar ---- */
     function salvarProduto() {
         const n = document.getElementById('p_nome').value, pl = parseFloat(document.getElementById('p_preco_l').value), pe = parseFloat(document.getElementById('p_preco_e').value);
         if(n) { db.produtos.push({nome: n, pL: pl, pE: pe, qtd: 0, estoque_inicial: 0, vazios: 0, v_l: 0, v_e: 0, v_a_r: 0, v_a_q: 0}); document.getElementById('p_nome').value=''; document.getElementById('p_preco_l').value=''; document.getElementById('p_preco_e').value=''; renderizar(); }
     }
     function salvarAtacado() { 
         const n = document.getElementById('a_nome').value, p = document.getElementById('a_p_idx').value, pr = parseFloat(document.getElementById('a_preco').value); 
-        if(n && p!=="") { db.atacado.push({nome: n, pIdx: parseInt(p), preco: pr}); document.getElementById('a_nome').value=''; document.getElementById('a_preco').value=''; renderizar(); } 
+        if(n && p!=="") { db.atacado.push({nome: n, pIdx: parseInt(p), preco: pr, vendas_hoje: 0}); document.getElementById('a_nome').value=''; document.getElementById('a_preco').value=''; renderizar(); } 
     }
     function salvarEntrega() { 
         const n = document.getElementById('e_nome').value, e = document.getElementById('e_end').value, p = document.getElementById('e_p_idx').value; 
         if(n && p!=="") { db.entrega.push({nome: n, end: e, pIdx: parseInt(p)}); document.getElementById('e_nome').value=''; document.getElementById('e_end').value=''; renderizar(); } 
     }
     
-    /* ---- Funções de Editar e Excluir ---- */
+    /* ---- Funções de Gerenciar ---- */
     function editarProduto(i) {
         let p = db.produtos[i];
         let nome = prompt("Nome do Produto:", p.nome); if(nome === null) return;
@@ -310,13 +331,33 @@
 
     /* ---- Funções de Vendas ---- */
     function vendaL(i) { if(db.produtos[i].qtd > 0) { db.produtos[i].v_l++; db.produtos[i].qtd--; db.produtos[i].vazios++; renderizar(); } }
+    
     function vendaE(i) { const p = db.produtos[db.entrega[i].pIdx]; if(p.qtd > 0) { p.v_e++; p.qtd--; p.vazios++; renderizar(); } }
-    function vendaA(i) { const q = parseInt(document.getElementById(`q_a_${i}`).value); const p = db.produtos[db.atacado[i].pIdx]; if(q > 0 && p.qtd >= q) { p.v_a_r += (q * db.atacado[i].preco); p.v_a_q += q; p.qtd -= q; p.vazios += q; renderizar(); } }
+    
+    function vendaA(i) { 
+        const q = parseInt(document.getElementById(`q_a_${i}`).value); 
+        const p = db.produtos[db.atacado[i].pIdx]; 
+        if(q > 0 && p.qtd >= q) { 
+            db.atacado[i].vendas_hoje = (db.atacado[i].vendas_hoje || 0) + q;
+            p.v_a_r += (q * db.atacado[i].preco); p.v_a_q += q; p.qtd -= q; p.vazios += q; 
+            renderizar(); 
+        } 
+    }
+    
     function vendaAvulsa(tipo) {
         const pIdx = document.getElementById(tipo === 'A' ? 'avulso_a_p' : 'avulso_e_p').value; if(pIdx === "") return;
         const p = db.produtos[pIdx];
         if(tipo==='E') { if(p.qtd>0) { p.v_e++; p.qtd--; p.vazios++; renderizar(); } }
-        else { const q = parseInt(document.getElementById('avulso_a_q').value) || 0; if(q>0 && p.qtd>=q) { const pr = parseFloat(prompt("Preço Unitário?", p.pL)); p.v_a_r+=(q*pr); p.v_a_q+=q; p.qtd-=q; p.vazios+=q; renderizar(); } }
+        else { 
+            const q = parseInt(document.getElementById('avulso_a_q').value) || 0; 
+            if(q>0 && p.qtd>=q) { 
+                const pr = parseFloat(prompt("Preço Unitário?", p.pL)); 
+                db.v_avulsa_a_q = (db.v_avulsa_a_q || 0) + q;
+                db.v_avulsa_a_r = (db.v_avulsa_a_r || 0) + (q * pr);
+                p.v_a_r+=(q*pr); p.v_a_q+=q; p.qtd-=q; p.vazios+=q; 
+                renderizar(); 
+            } 
+        }
     }
 
     /* ---- Ajustes de Estoque ---- */
@@ -331,14 +372,17 @@
     function mudarVazio(i, v) { db.produtos[i].vazios = Math.max(0, (db.produtos[i].vazios || 0) + v); renderizar(); }
     
     function zerarVendas() { 
-        if(confirm("Deseja zerar as vendas do dia? O estoque ATUAL virará o INICIAL do próximo dia e as OBSERVAÇÕES serão limpas.")) { 
+        if(confirm("Deseja zerar as vendas do dia? O estoque ATUAL virará o INICIAL, as OBSERVAÇÕES e o RELATÓRIO DE CLIENTES serão resetados.")) { 
             db.produtos.forEach(p => { p.estoque_inicial = p.qtd; p.v_l=0; p.v_e=0; p.v_a_r=0; p.v_a_q=0; p.vazios=0; }); 
+            db.atacado.forEach(c => { c.vendas_hoje = 0; });
+            db.v_avulsa_a_q = 0;
+            db.v_avulsa_a_r = 0;
             db.obs = ''; 
             renderizar(); 
         } 
     }
 
-    /* ---- Geração do Relatório ---- */
+    /* ---- Geração do PDF ---- */
     function gerarPDF() {
         const corpo = document.getElementById('tabela-corpo');
         corpo.innerHTML = '';
@@ -346,6 +390,7 @@
         const data = new Date();
         document.getElementById('data-relatorio').innerText = data.toLocaleDateString() + " às " + data.toLocaleTimeString();
 
+        // 1. Preenche tabela geral de produtos
         db.produtos.forEach(p => {
             const subtotal = (p.v_l * p.pL) + (p.v_e * p.pE) + p.v_a_r;
             totalGeral += subtotal;
@@ -362,9 +407,47 @@
                 </tr>`;
         });
 
+        // 2. Preenche a NOVA tabela detalhada de Clientes de Atacado
+        const corpoAtacado = document.getElementById('tabela-atacado-corpo');
+        const containerAtacado = document.getElementById('pdf-atacado-container');
+        corpoAtacado.innerHTML = '';
+        let vendeuAtacadoHoje = false;
+
+        db.atacado.forEach(c => {
+            if(c.vendas_hoje && c.vendas_hoje > 0) {
+                vendeuAtacadoHoje = true;
+                const pNome = db.produtos[c.pIdx]?.nome || 'Produto';
+                const subC = c.vendas_hoje * c.preco;
+                corpoAtacado.innerHTML += `
+                    <tr>
+                        <td style="text-align:left; padding-left:15px;">${c.nome}</td>
+                        <td>${pNome}</td>
+                        <td>R$ ${c.preco.toFixed(2)}</td>
+                        <td><b>${c.vendas_hoje}</b></td>
+                        <td>R$ ${subC.toFixed(2)}</td>
+                    </tr>`;
+            }
+        });
+
+        // Adiciona vendas avulsas de atacado se houver
+        if(db.v_avulsa_a_q && db.v_avulsa_a_q > 0) {
+            vendeuAtacadoHoje = true;
+            corpoAtacado.innerHTML += `
+                <tr style="background:#f9f9f9; font-style:italic;">
+                    <td style="text-align:left; padding-left:15px;">⚡ Venda Avulsa (Sem Cadastro)</td>
+                    <td>Vários</td>
+                    <td>-</td>
+                    <td><b>${db.v_avulsa_a_q}</b></td>
+                    <td>R$ ${db.v_avulsa_a_r.toFixed(2)}</td>
+                </tr>`;
+        }
+
+        // Exibe ou oculta a tabela de atacado no PDF dependendo do uso
+        containerAtacado.style.display = vendeuAtacadoHoje ? "block" : "none";
+
         document.getElementById('pdf-total-geral').innerText = "R$ " + totalGeral.toFixed(2);
         
-        // Verifica se há observações para exibir no PDF
+        // Exibe bloco de Observações
         const containerObs = document.getElementById('pdf-obs-container');
         if(db.obs && db.obs.trim() !== "") {
             document.getElementById('pdf-obs').innerText = db.obs;
