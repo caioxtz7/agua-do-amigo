@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão v21</title>
+    <title>Água do Amigo - Gestão v23</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #f0f2f5; color: #333; }
@@ -33,6 +33,12 @@
         .flex-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         
         .info-vendas { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ddd; font-size: 11px; color: #666; display: flex; flex-wrap: wrap; gap: 8px; }
+
+        /* Estilos dos novos botões de gerenciar */
+        .card-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid #f1f1f1; display: flex; justify-content: flex-end; gap: 10px; }
+        .btn-acao { background: none; border: none; padding: 5px 8px; font-size: 12px; cursor: pointer; border-radius: 4px; }
+        .btn-acao.edit { color: #007bff; background: #e7f1ff; }
+        .btn-acao.del { color: #dc3545; background: #ffebee; }
 
         .total-box { background: #1c1e21; color: #fff; padding: 20px; border-radius: 12px; text-align: center; margin-top: 15px; }
         .valor-total { display: block; font-size: 32px; color: #44ff7e; font-weight: bold; }
@@ -130,11 +136,12 @@
         <thead>
             <tr>
                 <th>Produto</th>
+                <th>Estoque Inicial</th>
                 <th>Balcão</th>
                 <th>Entrega</th>
                 <th>Atacado</th>
-                <th>Vazios</th>
-                <th>Estoque Cheio</th>
+                <th>Estoque Final</th>
+                <th>Vazios Recolhidos</th>
                 <th>Total (R$)</th>
             </tr>
         </thead>
@@ -145,6 +152,9 @@
 
 <script>
     let db = JSON.parse(localStorage.getItem('AGUA_V21')) || { produtos: [], atacado: [], entrega: [] };
+
+    // Correção para produtos antigos 
+    db.produtos.forEach(p => { if(p.estoque_inicial === undefined) p.estoque_inicial = p.qtd; });
 
     function guia(id, el) {
         document.querySelectorAll('.secao').forEach(s => s.classList.remove('active'));
@@ -173,51 +183,136 @@
 
             lLoja.innerHTML += `<div class="card">
                 <div class="flex-row">
-                    <div><b>${p.nome}</b><br><small style="color:blue">Estoque: ${p.qtd}</small></div>
+                    <div><b>${p.nome}</b><br><small style="color:blue">Disponível: ${p.qtd}</small></div>
                     <button style="background:#007bff; color:white; padding:10px 15px;" onclick="vendaL(${i})">VENDER BALCÃO</button>
                 </div>
                 <div class="info-vendas">
                     <span>🛒 Balcão: <b>${p.v_l}</b></span> | <span>🚚 Entrega: <b>${p.v_e}</b></span> | <span>🏢 Atacado: <b>${p.v_a_q}</b></span>
                 </div>
+                <div class="card-footer">
+                    <button class="btn-acao edit" onclick="editarProduto(${i})">✏️ Editar</button>
+                    <button class="btn-acao del" onclick="excluirProduto(${i})">🗑️ Excluir</button>
+                </div>
             </div>`;
 
             lEst.innerHTML += `<div class="card">
-                <div class="flex-row"><b>${p.nome}</b> <span>Cheios: <b>${p.qtd}</b> <button onclick="ajustar(${i}, 'qtd')">✏️</button></span></div>
+                <div class="flex-row">
+                    <div><b>${p.nome}</b><br><small style="color:#666">Inicial do Dia: ${p.estoque_inicial || 0}</small></div> 
+                    <span>Atual Cheio: <b>${p.qtd}</b> <button onclick="ajustar(${i}, 'qtd')">✏️</button></span>
+                </div>
                 <div class="flex-row" style="margin-top:10px; border-top: 1px solid #eee; padding-top:10px">
                     <div style="font-size: 11px; flex: 1">Vazios: <b>${p.vazios || 0}</b> <button onclick="ajustar(${i}, 'vazios')">✏️</button></div>
-                    <button class="btn-vazio" onclick="mudarVazio(${i}, 1)">+1 Vazio</button>
-                    <button class="btn-vazio" onclick="mudarVazio(${i}, -1)">-1 Vazio</button>
+                    <button class="btn-vazio" style="padding: 5px 10px;" onclick="mudarVazio(${i}, 1)">+1 Vazio</button>
+                    <button class="btn-vazio" style="padding: 5px 10px; margin-left:5px;" onclick="mudarVazio(${i}, -1)">-1 Vazio</button>
                 </div>
             </div>`;
         });
 
         db.atacado.forEach((c, i) => {
             if (c.nome.toLowerCase().includes(bA)) {
-                lAta.innerHTML += `<div class="card flex-row">
-                    <div><b>${c.nome}</b><br><small>${db.produtos[c.pIdx]?.nome}</small></div>
-                    <div style="display:flex; gap:5px"><input type="number" id="q_a_${i}" placeholder="Qtd" style="margin:0; width:60px"><button style="background:#fd7e14; color:white; padding:10px" onclick="vendaA(${i})">VENDER</button></div>
+                lAta.innerHTML += `<div class="card">
+                    <div class="flex-row">
+                        <div><b>${c.nome}</b><br><small>${db.produtos[c.pIdx]?.nome} - R$ ${c.preco.toFixed(2)}</small></div>
+                        <div style="display:flex; gap:5px"><input type="number" id="q_a_${i}" placeholder="Qtd" style="margin:0; width:60px"><button style="background:#fd7e14; color:white; padding:10px" onclick="vendaA(${i})">VENDER</button></div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn-acao edit" onclick="editarAtacado(${i})">✏️ Editar</button>
+                        <button class="btn-acao del" onclick="excluirAtacado(${i})">🗑️ Excluir</button>
+                    </div>
                 </div>`;
             }
         });
 
         db.entrega.forEach((c, i) => {
             if (c.nome.toLowerCase().includes(bE) || (c.end && c.end.toLowerCase().includes(bE))) {
-                lEnt.innerHTML += `<div class="card flex-row">
-                    <div><b>${c.nome}</b><br><small>${c.end || 'Sem endereço'}</small></div>
-                    <button style="background:#17a2b8; color:white; padding:10px" onclick="vendaE(${i})">SAÍDA +1</button>
+                lEnt.innerHTML += `<div class="card">
+                    <div class="flex-row">
+                        <div><b>${c.nome}</b><br><small>${c.end || 'Sem endereço'}</small></div>
+                        <button style="background:#17a2b8; color:white; padding:10px" onclick="vendaE(${i})">SAÍDA +1</button>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn-acao edit" onclick="editarEntrega(${i})">✏️ Editar</button>
+                        <button class="btn-acao del" onclick="excluirEntrega(${i})">🗑️ Excluir</button>
+                    </div>
                 </div>`;
             }
         });
         document.getElementById('faturamento_hoje').innerText = "R$ " + totalFaturamento.toFixed(2);
     }
 
+    /* ---- Funções de Salvar (Criação) ---- */
     function salvarProduto() {
         const n = document.getElementById('p_nome').value, pl = parseFloat(document.getElementById('p_preco_l').value), pe = parseFloat(document.getElementById('p_preco_e').value);
-        if(n) { db.produtos.push({nome: n, pL: pl, pE: pe, qtd: 0, vazios: 0, v_l: 0, v_e: 0, v_a_r: 0, v_a_q: 0}); renderizar(); }
+        if(n) { db.produtos.push({nome: n, pL: pl, pE: pe, qtd: 0, estoque_inicial: 0, vazios: 0, v_l: 0, v_e: 0, v_a_r: 0, v_a_q: 0}); document.getElementById('p_nome').value=''; document.getElementById('p_preco_l').value=''; document.getElementById('p_preco_e').value=''; renderizar(); }
     }
-    function salvarAtacado() { const n = document.getElementById('a_nome').value, p = document.getElementById('a_p_idx').value, pr = parseFloat(document.getElementById('a_preco').value); if(n && p!=="") { db.atacado.push({nome: n, pIdx: parseInt(p), preco: pr}); renderizar(); } }
-    function salvarEntrega() { const n = document.getElementById('e_nome').value, e = document.getElementById('e_end').value, p = document.getElementById('e_p_idx').value; if(n && p!=="") { db.entrega.push({nome: n, end: e, pIdx: parseInt(p)}); renderizar(); } }
+    function salvarAtacado() { 
+        const n = document.getElementById('a_nome').value, p = document.getElementById('a_p_idx').value, pr = parseFloat(document.getElementById('a_preco').value); 
+        if(n && p!=="") { db.atacado.push({nome: n, pIdx: parseInt(p), preco: pr}); document.getElementById('a_nome').value=''; document.getElementById('a_preco').value=''; renderizar(); } 
+    }
+    function salvarEntrega() { 
+        const n = document.getElementById('e_nome').value, e = document.getElementById('e_end').value, p = document.getElementById('e_p_idx').value; 
+        if(n && p!=="") { db.entrega.push({nome: n, end: e, pIdx: parseInt(p)}); document.getElementById('e_nome').value=''; document.getElementById('e_end').value=''; renderizar(); } 
+    }
     
+    /* ---- Novas Funções de Editar e Excluir ---- */
+    function editarProduto(i) {
+        let p = db.produtos[i];
+        let nome = prompt("Nome do Produto:", p.nome);
+        if(nome === null) return;
+        let pL = prompt("Preço Balcão (R$):", p.pL);
+        if(pL === null) return;
+        let pE = prompt("Preço Entrega (R$):", p.pE);
+        if(pE === null) return;
+
+        p.nome = nome || p.nome;
+        p.pL = parseFloat(pL) || 0;
+        p.pE = parseFloat(pE) || 0;
+        renderizar();
+    }
+
+    function excluirProduto(i) {
+        if(confirm("Deseja mesmo excluir este produto? ATENÇÃO: Clientes de Atacado e Entrega vinculados a ele também serão excluídos.")) {
+            db.produtos.splice(i, 1);
+            // Atualiza os índices e remove os clientes vinculados ao produto deletado para não dar erro
+            db.atacado = db.atacado.filter(c => c.pIdx !== i).map(c => { if(c.pIdx > i) c.pIdx--; return c; });
+            db.entrega = db.entrega.filter(c => c.pIdx !== i).map(c => { if(c.pIdx > i) c.pIdx--; return c; });
+            renderizar();
+        }
+    }
+
+    function editarAtacado(i) {
+        let c = db.atacado[i];
+        let nome = prompt("Nome do Cliente:", c.nome);
+        if(nome === null) return;
+        let preco = prompt("Preço Combinado (R$):", c.preco);
+        if(preco === null) return;
+
+        c.nome = nome || c.nome;
+        c.preco = parseFloat(preco) || 0;
+        renderizar();
+    }
+
+    function excluirAtacado(i) {
+        if(confirm("Excluir este cliente de atacado?")) { db.atacado.splice(i, 1); renderizar(); }
+    }
+
+    function editarEntrega(i) {
+        let c = db.entrega[i];
+        let nome = prompt("Nome do Cliente:", c.nome);
+        if(nome === null) return;
+        let end = prompt("Endereço / Rua:", c.end);
+        if(end === null) return;
+
+        c.nome = nome || c.nome;
+        c.end = end || c.end;
+        renderizar();
+    }
+
+    function excluirEntrega(i) {
+        if(confirm("Excluir este cliente de entrega?")) { db.entrega.splice(i, 1); renderizar(); }
+    }
+
+    /* ---- Funções de Vendas ---- */
     function vendaL(i) { if(db.produtos[i].qtd > 0) { db.produtos[i].v_l++; db.produtos[i].qtd--; db.produtos[i].vazios++; renderizar(); } }
     function vendaE(i) { const p = db.produtos[db.entrega[i].pIdx]; if(p.qtd > 0) { p.v_e++; p.qtd--; p.vazios++; renderizar(); } }
     function vendaA(i) { const q = parseInt(document.getElementById(`q_a_${i}`).value); const p = db.produtos[db.atacado[i].pIdx]; if(q > 0 && p.qtd >= q) { p.v_a_r += (q * db.atacado[i].preco); p.v_a_q += q; p.qtd -= q; p.vazios += q; renderizar(); } }
@@ -229,9 +324,29 @@
         else { const q = parseInt(document.getElementById('avulso_a_q').value) || 0; if(q>0 && p.qtd>=q) { const pr = parseFloat(prompt("Preço Unitário?", p.pL)); p.v_a_r+=(q*pr); p.v_a_q+=q; p.qtd-=q; p.vazios+=q; renderizar(); } }
     }
 
-    function ajustar(i, c) { let n = prompt("Novo valor:", db.produtos[i][c]); if(n!==null) { db.produtos[i][c]=parseInt(n); renderizar(); } }
+    /* ---- Ajustes de Estoque ---- */
+    function ajustar(i, c) { 
+        let n = prompt("Novo valor:", db.produtos[i][c]); 
+        if(n!==null) { 
+            db.produtos[i][c]=parseInt(n); 
+            if(c === 'qtd' && confirm("Deseja definir este valor também como o Estoque Inicial do dia?")) {
+                db.produtos[i].estoque_inicial = parseInt(n);
+            }
+            renderizar(); 
+        } 
+    }
+    
     function mudarVazio(i, v) { db.produtos[i].vazios = Math.max(0, (db.produtos[i].vazios || 0) + v); renderizar(); }
-    function zerarVendas() { if(confirm("Deseja zerar as vendas do dia para começar o próximo?")) { db.produtos.forEach(p => {p.v_l=0; p.v_e=0; p.v_a_r=0; p.v_a_q=0;}); renderizar(); } }
+    
+    function zerarVendas() { 
+        if(confirm("Deseja zerar as vendas do dia? O estoque ATUAL CHEIO virará o ESTOQUE INICIAL do próximo dia.")) { 
+            db.produtos.forEach(p => {
+                p.estoque_inicial = p.qtd; 
+                p.v_l=0; p.v_e=0; p.v_a_r=0; p.v_a_q=0; p.vazios=0;
+            }); 
+            renderizar(); 
+        } 
+    }
 
     function gerarPDF() {
         const corpo = document.getElementById('tabela-corpo');
@@ -245,12 +360,13 @@
             totalGeral += subtotal;
             corpo.innerHTML += `
                 <tr>
-                    <td>${p.nome}</td>
+                    <td><b>${p.nome}</b></td>
+                    <td>${p.estoque_inicial}</td>
                     <td>${p.v_l}</td>
                     <td>${p.v_e}</td>
                     <td>${p.v_a_q}</td>
+                    <td><b>${p.qtd}</b></td>
                     <td>${p.vazios || 0}</td>
-                    <td>${p.qtd}</td>
                     <td>R$ ${subtotal.toFixed(2)}</td>
                 </tr>`;
         });
