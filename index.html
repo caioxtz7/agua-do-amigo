@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão v29</title>
+    <title>Água do Amigo - Gestão v30</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         /* --- CORES PADRÃO (MODO CLARO) --- */
@@ -171,7 +171,8 @@
             <b>⚡ Saída Entrega Avulsa:</b>
             <div class="flex-row">
                 <select id="avulso_e_p" style="margin:0"></select>
-                <button onclick="vendaAvulsa('E')" style="background:#17a2b8; color:#fff; padding:12px; flex:1">SAÍDA +1</button>
+                <input type="number" id="avulso_e_q" placeholder="Qtd" style="margin:0; width:70px">
+                <button onclick="vendaAvulsa('E')" style="background:#17a2b8; color:#fff; padding:12px">SAÍDA</button>
             </div>
         </div>
         <div class="busca-container"><input type="text" id="busca_entrega" class="input-busca" placeholder="🔍 Pesquisar nome ou rua..." onkeyup="renderizar()"></div>
@@ -280,23 +281,19 @@
             tipo: tipo, 
             qtd: qtd, 
             total: valorTotal,
-            ref: itemRef // Guarda uma referência caso precise achar o cliente ou produto depois
+            ref: itemRef
         });
     }
 
-    /* ---- FUNÇÃO DE ESTORNAR / APAGAR VENDA INDIVIDUAL ---- */
     function estornarVenda(index) {
         if (!confirm("Tem certeza que deseja cancelar e apagar esta venda? O estoque será devolvido e o dinheiro removido do caixa.")) return;
 
         const venda = db.historico[index];
-        
-        // 1. Achar o produto correspondente para devolver o estoque e tirar o contador do relatório
-        // Procura pelo nome exato do produto (contido ou igual)
         let prod = db.produtos.find(p => venda.produto.includes(p.nome));
         
         if (prod) {
-            prod.qtd += venda.qtd; // Devolve para o estoque de cheios
-            prod.vazios = Math.max(0, (prod.vazios || 0) - venda.qtd); // Remove do controle de vazios recolhidos
+            prod.qtd += venda.qtd;
+            prod.vazios = Math.max(0, (prod.vazios || 0) - venda.qtd);
 
             if (venda.tipo === 'Balcão') {
                 prod.v_l = Math.max(0, prod.v_l - venda.qtd);
@@ -306,7 +303,6 @@
                 prod.v_a_q = Math.max(0, prod.v_a_q - venda.qtd);
                 prod.v_a_r = Math.max(0, prod.v_a_r - venda.total);
                 
-                // Se era um cliente de atacado fixo (e não avulso), abate o contador dele também
                 if (venda.ref !== null && db.atacado[venda.ref]) {
                     db.atacado[venda.ref].vendas_hoje = Math.max(0, (db.atacado[venda.ref].vendas_hoje || 0) - venda.qtd);
                 } else if (venda.produto.includes("(Atacado Avulso)")) {
@@ -316,7 +312,6 @@
             }
         }
 
-        // 2. Remove o registro do histórico
         db.historico.splice(index, 1);
         dispararNotificacao("❌ Venda cancelada e ajustada!");
         renderizar();
@@ -566,14 +561,19 @@
     function vendaAvulsa(tipo) {
         const pIdx = document.getElementById(tipo === 'A' ? 'avulso_a_p' : 'avulso_e_p').value; if(pIdx === "") return;
         const p = db.produtos[pIdx];
+        
         if(tipo==='E') { 
-            if(!confirm(`Confirmar Saída Avulsa de 1x ${p.nome}?`)) return;
-            if(p.qtd>0) { 
-                p.v_e++; p.qtd--; p.vazios++; 
-                registrarHistorico(`${p.nome} (Entrega Avulsa)`, 'Entrega', 1, p.pE);
-                dispararNotificacao(`🚚 Entrega Avulsa criada!`);
+            const q = parseInt(document.getElementById('avulso_e_q').value) || 0;
+            if(q <= 0) return dispararNotificacao("⚠️ Insira uma quantidade válida!");
+            if(!confirm(`Confirmar Saída Avulsa de ${q}x ${p.nome}?`)) return;
+            
+            if(p.qtd >= q) { 
+                p.v_e += q; p.qtd -= q; p.vazios += q; 
+                registrarHistorico(`${p.nome} (Entrega Avulsa)`, 'Entrega', q, (q * p.pE));
+                dispararNotificacao(`🚚 Entrega Avulsa: ${q}x registradas!`);
+                document.getElementById('avulso_e_q').value = '';
                 renderizar(); 
-            } else { dispararNotificacao("⚠️ Sem estoque!"); }
+            } else { dispararNotificacao("⚠️ Sem estoque suficiente!"); }
         }
         else { 
             const q = parseInt(document.getElementById('avulso_a_q').value) || 0; 
