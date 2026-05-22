@@ -72,6 +72,69 @@
             th { background: #eee; }
             .no-print { display: none; }
         }
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #121214; color: #e1e1e6; }
+        .container { max-width: 550px; margin: auto; background: #202024; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h1 { text-align: center; color: #4da6ff; font-size: 22px; margin-bottom: 15px; }
+        
+        .abas { display: flex; gap: 4px; background: #121214; padding: 5px; border-radius: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .aba { flex: 1; min-width: 70px; padding: 12px 2px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; font-size: 11px; color: #a8a8b3; }
+        .aba.active { background: #007bff; color: #fff; }
+
+        .secao { display: none; }
+        .secao.active { display: block; }
+
+        .caixa-form { background: #29292e; border: 1px solid #323238; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #323238; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: #121214; color: #fff; }
+        
+        .venda-avulsa { background: #2e2b1d; border: 1px solid #4d4416; padding: 12px; border-radius: 10px; margin-bottom: 15px; }
+        .venda-avulsa b { display: block; margin-bottom: 8px; font-size: 13px; color: #ffdb58; }
+
+        .busca-container { margin-bottom: 15px; position: sticky; top: 0; z-index: 5; background: #202024; padding: 10px 0; border-bottom: 1px solid #323238; }
+        .input-busca { border: 2px solid #007bff !important; background: #121214; margin: 0; }
+
+        button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        button:active { transform: scale(0.95); }
+        .btn-verde { width: 100%; padding: 15px; background: #28a745; color: #fff; font-size: 16px; }
+        
+        .card { border: 1px solid #323238; padding: 15px; border-radius: 10px; margin-bottom: 10px; background: #29292e; }
+        .flex-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        
+        .info-vendas { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #323238; font-size: 11px; color: #a8a8b3; display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .card-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid #323238; display: flex; justify-content: flex-end; gap: 10px; }
+        .btn-acao { background: none; border: none; padding: 5px 8px; font-size: 12px; cursor: pointer; border-radius: 4px; }
+        .btn-acao.edit { color: #4da6ff; background: #19222d; }
+        .btn-acao.del { color: #f75a68; background: #2d191a; }
+
+        .total-box { background: #121214; color: #fff; padding: 20px; border-radius: 12px; text-align: center; margin-top: 15px; border: 1px solid #323238; }
+        .valor-total { display: block; font-size: 32px; color: #00b37e; font-weight: bold; }
+
+        #notificacao {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-50px);
+            background: #28a745; color: white; padding: 12px 25px; border-radius: 30px;
+            font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 9999;
+            opacity: 0; transition: all 0.3s ease; pointer-events: none; font-size: 14px;
+        }
+        #notificacao.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        .item-historico { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #323238; font-size: 14px; }
+        .item-historico:last-child { border-bottom: none; }
+        .hist-hora { color: #7c7c8a; font-size: 12px; }
+        .hist-tag { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; color: #fff; }
+        .tag-balcao { background: #007bff; }
+        .tag-entrega { background: #17a2b8; }
+        .tag-atacado { background: #fd7e14; }
+
+        #relatorio-area { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #relatorio-area, #relatorio-area * { visibility: visible; }
+            #relatorio-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; color: #000; background: #fff; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+            th, td { border: 1px solid #333; padding: 8px; text-align: center; color: #000; }
+            th { background: #eee; }
+        }
     </style>
 </head>
 <body>
