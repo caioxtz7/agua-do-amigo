@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão v32</title>
+    <title>Água do Amigo - Gestão v33</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         /* --- CORES PADRÃO (MODO CLARO) --- */
@@ -229,10 +229,10 @@
         <tbody id="tabela-corpo"></tbody>
     </table>
     <div id="pdf-atacado-container" style="margin-top: 25px;">
-        <h3>🏢 Detalhamento do Atacado (Por Cliente)</h3>
+        <h3>🏢 Detalhamento do Atacado (Soma por Cliente)</h3>
         <table>
             <thead>
-                <tr><th>Nome do Cliente</th><th>Produto</th><th>Preço Un.</th><th>Qtd</th><th>Subtotal</th><th>Status</th></tr>
+                <tr><th>Nome do Cliente</th><th>Produto</th><th>Qtd Total</th><th>Subtotal Acumulado</th><th>Status Financeiro</th></tr>
             </thead>
             <tbody id="tabela-atacado-corpo"></tbody>
         </table>
@@ -247,7 +247,7 @@
 <script>
     let db;
     try {
-        db = JSON.parse(localStorage.getItem('AGUA_V23'));
+        db = JSON.parse(localStorage.getItem('AGUA_V24'));
         if (!db || !db.produtos || !db.atacado || !db.entrega) { throw new Error("Nova Versão"); }
     } catch(e) {
         db = { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, historico: [], temaEscuro: false };
@@ -259,7 +259,7 @@
     function alternarTema() {
         db.temaEscuro = !db.temaEscuro;
         aplicarTema();
-        localStorage.setItem('AGUA_V23', JSON.stringify(db));
+        localStorage.setItem('AGUA_V24', JSON.stringify(db));
     }
 
     function aplicarTema() {
@@ -287,7 +287,7 @@
         return `${agora.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})} - ${agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`;
     }
 
-    function registrarHistorico(produto, tipo, qtd, valorTotal, itemRef = null, pago = true, endereco = "", pIdx = null) {
+    function registrarHistorico(produto, tipo, qtd, valorTotal, itemRef = null, pago = true, endereco = "", pIdx = null, clienteNomeRaw = "") {
         db.historico.unshift({ 
             hora: obterHorarioAtual(), 
             produto: produto, 
@@ -297,7 +297,8 @@
             ref: itemRef,
             pago: pago,
             endereco: endereco,
-            pIdx: pIdx
+            pIdx: pIdx,
+            clienteNome: clienteNomeRaw
         });
     }
 
@@ -307,11 +308,8 @@
 
         if (confirm(`Confirmar que o valor de R$ ${h.total.toFixed(2)} já foi pago?`)) {
             h.pago = true;
-            
-            // Localiza o produto associado para colocar o dinheiro no caixa do produto correspondente
             let prod = db.produtos[h.pIdx];
             if (!prod && h.pIdx === null) {
-                // Tenta buscar por string se o pIdx falhar
                 prod = db.produtos.find(p => h.produto.includes(p.nome));
             }
 
@@ -378,7 +376,7 @@
         const h = db.historico[index];
         if(!h) return;
 
-        let clienteNome = h.produto.includes("Cliente:") ? h.produto.split("Cliente: ")[1] : "Cliente Avulso";
+        let clienteNome = h.clienteNome || "Cliente Avulso";
         let prodNome = h.produto.split(' - ')[0];
 
         let msg = `*🏍️ Água do Amigo - NOVA ENTREGA*\n\n`;
@@ -427,7 +425,7 @@
     }
 
     function renderizar() {
-        localStorage.setItem('AGUA_V23', JSON.stringify(db));
+        localStorage.setItem('AGUA_V24', JSON.stringify(db));
         aplicarTema();
         
         const lLoja = document.getElementById('lista_loja'), lAta = document.getElementById('lista_atacado'), lEnt = document.getElementById('lista_entrega'), lEst = document.getElementById('lista_estoque'), lHist = document.getElementById('lista_historico');
@@ -549,7 +547,7 @@
         if(document.getElementById('faturamento_hoje')) document.getElementById('faturamento_hoje').innerText = "R$ " + totalFaturamentoGeral.toFixed(2);
     }
 
-    function salvarObs() { db.obs = document.getElementById('campo_obs').value; localStorage.setItem('AGUA_V23', JSON.stringify(db)); }
+    function salvarObs() { db.obs = document.getElementById('campo_obs').value; localStorage.setItem('AGUA_V24', JSON.stringify(db)); }
 
     function salvarProduto() {
         const n = document.getElementById('p_nome').value, pl = parseFloat(document.getElementById('p_preco_l').value), pe = parseFloat(document.getElementById('p_preco_e').value);
@@ -582,7 +580,7 @@
     function vendaL(i) { 
         if(db.produtos[i].qtd > 0) { 
             db.produtos[i].v_l++; db.produtos[i].qtd--; db.produtos[i].vazios++; 
-            registrarHistorico(db.produtos[i].nome, 'Balcão', 1, db.produtos[i].pL, null, true, "", i);
+            registrarHistorico(db.produtos[i].nome, 'Balcão', 1, db.produtos[i].pL, null, true, "", i, "Balcão");
             dispararNotificacao("🛒 Balcão computado!"); renderizar(); 
         } else { dispararNotificacao("⚠️ Sem estoque!"); }
     }
@@ -594,7 +592,7 @@
             let pago = perguntarPagamento();
             p.qtd--; p.vazios++; 
             if(pago) { p.v_e++; } 
-            registrarHistorico(`${p.nome} - Cliente: ${db.entrega[i].nome}`, 'Entrega', 1, p.pE, null, pago, db.entrega[i].end, pIdx);
+            registrarHistorico(`${p.nome} - Cliente: ${db.entrega[i].nome}`, 'Entrega', 1, p.pE, null, pago, db.entrega[i].end, pIdx, db.entrega[i].nome);
             dispararNotificacao("🚚 Saída de entrega registrada!"); renderizar(); 
         } else { dispararNotificacao("⚠️ Sem estoque!"); }
     }
@@ -610,7 +608,7 @@
             db.atacado[i].vendas_hoje = (db.atacado[i].vendas_hoje || 0) + q;
             p.v_a_q = (p.v_a_q || 0) + q; p.qtd -= q; p.vazios = (p.vazios || 0) + q; 
             if(pago) { p.v_a_r = (p.v_a_r || 0) + (q * db.atacado[i].preco); }
-            registrarHistorico(`${db.atacado[i].nome} (${p.nome})`, 'Atacado', q, (q * db.atacado[i].preco), i, pago, "", pIdx);
+            registrarHistorico(`${db.atacado[i].nome} (${p.nome})`, 'Atacado', q, (q * db.atacado[i].preco), i, pago, "", pIdx, db.atacado[i].nome);
             document.getElementById(`q_a_${i}`).value = ''; dispararNotificacao("🏢 Atacado registrada!"); renderizar(); 
         } else { dispararNotificacao("⚠️ Sem estoque!"); }
     }
@@ -627,12 +625,12 @@
             if(tipo === 'E') {
                 if(pago) p.v_e += q;
                 let endAvulso = prompt("Digite o endereço para o motoboy (ou deixe em branco):", "");
-                registrarHistorico(`${p.nome} (Entrega Avulsa)`, 'Entrega', q, (q * p.pE), null, pago, endAvulso, pIdx);
+                registrarHistorico(`${p.nome} (Entrega Avulsa)`, 'Entrega', q, (q * p.pE), null, pago, endAvulso, pIdx, "Entrega Avulsa");
             } else {
                 const pr = parseFloat(prompt("Preço Unitário?", p.pL)) || p.pL;
                 p.v_a_q += q;
                 if(pago) { p.v_a_r += (q * pr); }
-                registrarHistorico(`${p.nome} (Atacado Avulso)`, 'Atacado', q, (q * pr), null, pago, "", pIdx);
+                registrarHistorico(`${p.nome} (Atacado Avulso)`, 'Atacado', q, (q * pr), null, pago, "", pIdx, "Atacado Avulso");
             }
             document.getElementById(tipo === 'A' ? 'avulso_a_q' : 'avulso_e_q').value = '';
             dispararNotificacao("⚡ Registro Avulso feito!"); renderizar();
@@ -661,17 +659,58 @@
         corpo.innerHTML = ''; corpoAtacado.innerHTML = '';
         let totalGeral = 0;
 
+        // 1. Preenche tabela geral de produtos
         db.produtos.forEach(p => {
             let totalProd = (p.v_l * (p.pL || 0)) + (p.v_e * (p.pE || 0)) + (p.v_a_r || 0);
             totalGeral += totalProd;
             corpo.innerHTML += `<tr><td>${p.nome}</td><td>${p.estoque_inicial||0}</td><td>${p.v_l}</td><td>${p.v_e}</td><td>${p.v_a_q}</td><td>${p.qtd}</td><td>${p.vazios||0}</td><td>R$ ${totalProd.toFixed(2)}</td></tr>`;
         });
 
+        // 2. Agrupa o Atacado por Cliente e Produto para evitar repetição
+        let mapaAtacado = {};
+
         db.historico.forEach(h => {
             if(h.tipo === 'Atacado') {
-                corpoAtacado.innerHTML += `<tr><td>${h.produto}</td><td>Galao</td><td>-</td><td>${h.qtd}</td><td>R$ ${h.total.toFixed(2)}</td><td>${h.pago?'PAGO':'PENDENTE'}</td></tr>`;
+                let nomeCliente = h.clienteNome || "Atacado Avulso";
+                let nomeProd = h.produto.includes("(") ? h.produto.split("(")[1].replace(")", "") : h.produto;
+                
+                // Cria uma chave única combinando Cliente + Produto
+                let chave = `${nomeCliente}_${nomeProd}`;
+
+                if(!mapaAtacado[chave]) {
+                    mapaAtacado[chave] = {
+                        cliente: nomeCliente,
+                        produto: nomeProd,
+                        qtd: 0,
+                        total: 0,
+                        pago: true // Começa verdadeiro, muda se houver algum pendente
+                    };
+                }
+
+                mapaAtacado[chave].qtd += h.qtd;
+                mapaAtacado[chave].total += h.total;
+                if(!h.pago) {
+                    mapaAtacado[chave].pago = false; // Se uma das vendas desse bloco estiver pendente, avisa no relatório
+                }
             }
         });
+
+        // 3. Imprime as linhas somadas no PDF
+        let chavesAgrupadas = Object.keys(mapaAtacado);
+        if(chavesAgrupadas.length === 0) {
+            corpoAtacado.innerHTML = `<tr><td colspan="5" style="color:#888">Nenhuma venda de atacado registrada hoje.</td></tr>`;
+        } else {
+            chavesAgrupadas.forEach(c => {
+                let dado = mapaAtacado[c];
+                corpoAtacado.innerHTML += `<tr>
+                    <td><b>${dado.cliente}</b></td>
+                    <td>${dado.produto}</td>
+                    <td>${dado.qtd}</td>
+                    <td>R$ ${dado.total.toFixed(2)}</td>
+                    <td style="font-weight:bold; color:${dado.pago?'green':'red'}">${dado.pago ? 'PAGO' : 'PENDENTE'}</td>
+                </tr>`;
+            });
+        }
 
         document.getElementById('pdf-total-geral').innerText = `R$ ${totalGeral.toFixed(2)}`;
         if(db.obs) { document.getElementById('pdf-obs-container').style.display = 'block'; document.getElementById('pdf-obs').innerText = db.obs; }
