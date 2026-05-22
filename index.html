@@ -2,48 +2,87 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão v26</title>
+    <title>Água do Amigo - Gestão v27</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #f0f2f5; color: #333; }
-        .container { max-width: 550px; margin: auto; background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        /* --- CORES PADRÃO (MODO CLARO) --- */
+        :root {
+            --bg-principal: #f0f2f5;
+            --bg-container: #ffffff;
+            --texto-principal: #333333;
+            --bg-caixa-form: #f8f9fa;
+            --border-caixa-form: #dddddd;
+            --bg-card: #ffffff;
+            --border-card: #eeeeee;
+            --texto-pequeno: #666666;
+            --bg-abas: #eee;
+            --texto-abas: #555;
+            --bg-total-box: #1c1e21;
+        }
+
+        /* --- CORES DO MODO ESCURO (PRETO) --- */
+        body.dark-mode {
+            --bg-principal: #121214;
+            --bg-container: #202024;
+            --texto-principal: #e1e1e6;
+            --bg-caixa-form: #29292e;
+            --border-caixa-form: #323238;
+            --bg-card: #29292e;
+            --border-card: #323238;
+            --texto-pequeno: #a8a8b3;
+            --bg-abas: #121214;
+            --texto-abas: #a8a8b3;
+            --bg-total-box: #121214;
+        }
+
+        /* --- ESTILOS APLICADOS UTILIZANDO AS CORES --- */
+        body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: var(--bg-principal); color: var(--texto-principal); transition: background 0.3s, color 0.3s; }
+        .container { max-width: 550px; margin: auto; background: var(--bg-container); padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; }
         h1 { text-align: center; color: #007bff; font-size: 22px; margin-bottom: 15px; }
         
-        .abas { display: flex; gap: 4px; background: #eee; padding: 5px; border-radius: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .aba { flex: 1; min-width: 70px; padding: 12px 2px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; font-size: 11px; color: #555; }
+        /* Botão Temático Superior */
+        .btn-tema { position: absolute; top: 15px; right: 15px; background: #eee; color: #333; padding: 6px 12px; font-size: 12px; border-radius: 20px; font-weight: bold; }
+        body.dark-mode .btn-tema { background: #121214; color: #fff; border: 1px solid #323238; }
+
+        .abas { display: flex; gap: 4px; background: var(--bg-abas); padding: 5px; border-radius: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .aba { flex: 1; min-width: 70px; padding: 12px 2px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; font-size: 11px; color: var(--texto-abas); }
         .aba.active { background: #007bff; color: #fff; }
 
         .secao { display: none; }
         .secao.active { display: block; }
 
-        .caixa-form { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .caixa-form { background: var(--bg-caixa-form); border: 1px solid var(--border-caixa-form); padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: var(--bg-card); color: var(--texto-principal); }
         textarea { font-family: inherit; resize: vertical; }
         
         .venda-avulsa { background: #fff3cd; border: 1px solid #ffeeba; padding: 12px; border-radius: 10px; margin-bottom: 15px; }
         .venda-avulsa b { display: block; margin-bottom: 8px; font-size: 13px; color: #856404; }
+        body.dark-mode .venda-avulsa { background: #2e2b1d; border: 1px solid #4d4416; }
+        body.dark-mode .venda-avulsa b { color: #ffdb58; }
 
-        .busca-container { margin-bottom: 15px; position: sticky; top: 0; z-index: 5; background: #fff; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .input-busca { border: 2px solid #007bff !important; background: #f0f7ff; margin: 0; }
+        .busca-container { margin-bottom: 15px; position: sticky; top: 0; z-index: 5; background: var(--bg-container); padding: 10px 0; border-bottom: 1px solid var(--border-card); }
+        .input-busca { border: 2px solid #007bff !important; background: var(--bg-principal); margin: 0; }
 
         button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
         button:active { transform: scale(0.95); }
         .btn-verde { width: 100%; padding: 15px; background: #28a745; color: #fff; font-size: 16px; }
         
-        .card { border: 1px solid #eee; padding: 15px; border-radius: 10px; margin-bottom: 10px; background: #fff; }
+        .card { border: 1px solid var(--border-card); padding: 15px; border-radius: 10px; margin-bottom: 10px; background: var(--bg-card); }
         .flex-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         
-        .info-vendas { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ddd; font-size: 11px; color: #666; display: flex; flex-wrap: wrap; gap: 8px; }
+        .info-vendas { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-card); font-size: 11px; color: var(--texto-pequeno); display: flex; flex-wrap: wrap; gap: 8px; }
 
-        .card-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid #f1f1f1; display: flex; justify-content: flex-end; gap: 10px; }
+        .card-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-card); display: flex; justify-content: flex-end; gap: 10px; }
         .btn-acao { background: none; border: none; padding: 5px 8px; font-size: 12px; cursor: pointer; border-radius: 4px; }
         .btn-acao.edit { color: #007bff; background: #e7f1ff; }
         .btn-acao.del { color: #dc3545; background: #ffebee; }
+        body.dark-mode .btn-acao.edit { color: #4da6ff; background: #19222d; }
+        body.dark-mode .btn-acao.del { color: #f75a68; background: #2d191a; }
 
-        .total-box { background: #1c1e21; color: #fff; padding: 20px; border-radius: 12px; text-align: center; margin-top: 15px; }
+        .total-box { background: var(--bg-total-box); color: #fff; padding: 20px; border-radius: 12px; text-align: center; margin-top: 15px; }
+        body.dark-mode .total-box { border: 1px solid #323238; }
         .valor-total { display: block; font-size: 32px; color: #44ff7e; font-weight: bold; }
 
-        /* Estilo da Notificação Flutuante */
         #notificacao {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-50px);
             background: #28a745; color: white; padding: 12px 25px; border-radius: 30px;
@@ -52,75 +91,9 @@
         }
         #notificacao.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* Estilos do Histórico */
-        .item-historico { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }
+        .item-historico { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-card); font-size: 14px; }
         .item-historico:last-child { border-bottom: none; }
-        .hist-hora { color: #888; font-size: 12px; font-variant-numeric: tabular-nums; }
-        .hist-tag { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; color: #fff; }
-        .tag-balcao { background: #007bff; }
-        .tag-entrega { background: #17a2b8; }
-        .tag-atacado { background: #fd7e14; }
-
-        /* Estilos para o PDF/Impressão */
-        #relatorio-area { display: none; }
-        @media print {
-            body * { visibility: hidden; }
-            #relatorio-area, #relatorio-area * { visibility: visible; }
-            #relatorio-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
-            th, td { border: 1px solid #333; padding: 8px; text-align: center; }
-            th { background: #eee; }
-            .no-print { display: none; }
-        }
-    <style>
-        body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #121214; color: #e1e1e6; }
-        .container { max-width: 550px; margin: auto; background: #202024; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        h1 { text-align: center; color: #4da6ff; font-size: 22px; margin-bottom: 15px; }
-        
-        .abas { display: flex; gap: 4px; background: #121214; padding: 5px; border-radius: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .aba { flex: 1; min-width: 70px; padding: 12px 2px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; font-size: 11px; color: #a8a8b3; }
-        .aba.active { background: #007bff; color: #fff; }
-
-        .secao { display: none; }
-        .secao.active { display: block; }
-
-        .caixa-form { background: #29292e; border: 1px solid #323238; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #323238; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: #121214; color: #fff; }
-        
-        .venda-avulsa { background: #2e2b1d; border: 1px solid #4d4416; padding: 12px; border-radius: 10px; margin-bottom: 15px; }
-        .venda-avulsa b { display: block; margin-bottom: 8px; font-size: 13px; color: #ffdb58; }
-
-        .busca-container { margin-bottom: 15px; position: sticky; top: 0; z-index: 5; background: #202024; padding: 10px 0; border-bottom: 1px solid #323238; }
-        .input-busca { border: 2px solid #007bff !important; background: #121214; margin: 0; }
-
-        button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
-        button:active { transform: scale(0.95); }
-        .btn-verde { width: 100%; padding: 15px; background: #28a745; color: #fff; font-size: 16px; }
-        
-        .card { border: 1px solid #323238; padding: 15px; border-radius: 10px; margin-bottom: 10px; background: #29292e; }
-        .flex-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-        
-        .info-vendas { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #323238; font-size: 11px; color: #a8a8b3; display: flex; flex-wrap: wrap; gap: 8px; }
-
-        .card-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid #323238; display: flex; justify-content: flex-end; gap: 10px; }
-        .btn-acao { background: none; border: none; padding: 5px 8px; font-size: 12px; cursor: pointer; border-radius: 4px; }
-        .btn-acao.edit { color: #4da6ff; background: #19222d; }
-        .btn-acao.del { color: #f75a68; background: #2d191a; }
-
-        .total-box { background: #121214; color: #fff; padding: 20px; border-radius: 12px; text-align: center; margin-top: 15px; border: 1px solid #323238; }
-        .valor-total { display: block; font-size: 32px; color: #00b37e; font-weight: bold; }
-
-        #notificacao {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-50px);
-            background: #28a745; color: white; padding: 12px 25px; border-radius: 30px;
-            font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 9999;
-            opacity: 0; transition: all 0.3s ease; pointer-events: none; font-size: 14px;
-        }
-        #notificacao.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-        .item-historico { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #323238; font-size: 14px; }
-        .item-historico:last-child { border-bottom: none; }
-        .hist-hora { color: #7c7c8a; font-size: 12px; }
+        .hist-hora { color: var(--texto-pequeno); font-size: 12px; }
         .hist-tag { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; color: #fff; }
         .tag-balcao { background: #007bff; }
         .tag-entrega { background: #17a2b8; }
@@ -130,9 +103,9 @@
         @media print {
             body * { visibility: hidden; }
             #relatorio-area, #relatorio-area * { visibility: visible; }
-            #relatorio-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; color: #000; background: #fff; }
+            #relatorio-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; color: #000 !important; background: #fff !important; }
             table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
-            th, td { border: 1px solid #333; padding: 8px; text-align: center; color: #000; }
+            th, td { border: 1px solid #333; padding: 8px; text-align: center; color: #000 !important; }
             th { background: #eee; }
         }
     </style>
@@ -142,6 +115,8 @@
 <div id="notificacao">Venda realizada! 🎉</div>
 
 <div class="container">
+    <button class="btn-tema" onclick="alternarTema()">🌙 ESCURO</button>
+
     <h1>💧 Água do Amigo</h1>
 
     <div class="abas">
@@ -209,7 +184,7 @@
     </div>
 
     <div id="historico" class="secao">
-        <div class="caixa-form" style="background: #fff; border-color: #eee;">
+        <div class="caixa-form">
             <strong>📋 Registro de Vendas Recentes:</strong>
             <div id="lista_historico" style="margin-top: 10px; max-height: 400px; overflow-y: auto;"></div>
         </div>
@@ -275,36 +250,50 @@
 </div>
 
 <script>
-    // Recupera do localStorage mantendo a compatibilidade e inserindo a chave 'historico' se não existir
-    let db = JSON.parse(localStorage.getItem('AGUA_V21')) || { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, historico: [] };
+    let db = JSON.parse(localStorage.getItem('AGUA_V21')) || { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, historico: [], temaEscuro: false };
 
     // Travas de segurança para atualizações de banco de dados antigos
     if (db.obs === undefined) db.obs = "";
     if (db.v_avulsa_a_q === undefined) db.v_avulsa_a_q = 0;
     if (db.v_avulsa_a_r === undefined) db.v_avulsa_a_r = 0;
     if (db.historico === undefined) db.historico = [];
+    if (db.temaEscuro === undefined) db.temaEscuro = false;
     db.produtos.forEach(p => { if(p.estoque_inicial === undefined) p.estoque_inicial = p.qtd; });
     db.atacado.forEach(c => { if(c.vendas_hoje === undefined) c.vendas_hoje = 0; });
 
-    // Função para disparar a notificação visual na tela
+    // Função para ligar/desligar o modo escuro
+    function alternarTema() {
+        db.temaEscuro = !db.temaEscuro;
+        aplicarTema();
+        localStorage.setItem('AGUA_V21', JSON.stringify(db));
+    }
+
+    // Aplica as cores corretas na tela e atualiza o texto do botão
+    function aplicarTema() {
+        const btn = document.querySelector('.btn-tema');
+        if (db.temaEscuro) {
+            document.body.classList.add('dark-mode');
+            if(btn) btn.innerText = "☀️ CLARO";
+        } else {
+            document.body.classList.remove('dark-mode');
+            if(btn) btn.innerText = "🌙 ESCURO";
+        }
+    }
+
     function dispararNotificacao(mensagem) {
         const notif = document.getElementById('notificacao');
         notif.innerText = mensagem;
         notif.classList.add('show');
-        setTimeout(() => {
-            notif.classList.remove('show');
-        }, 3000);
+        setTimeout(() => { notif.classList.remove('show'); }, 3000);
     }
 
-    // Função auxiliar para capturar o horário atual formate HH:MM
     function obterHorarioAtual() {
         const agora = new Date();
         return agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     }
 
-    // Função para registrar os itens na lista de histórico
     function registrarHistorico(produto, tipo, qtd, valorTotal) {
-        db.historico.unshift({ // unshift insere no início para mostrar as mais recentes primeiro
+        db.historico.unshift({
             hora: obterHorarioAtual(),
             produto: produto,
             tipo: tipo,
@@ -323,6 +312,8 @@
 
     function renderizar() {
         localStorage.setItem('AGUA_V21', JSON.stringify(db));
+        aplicarTema(); // Garante o tema correto ao renderizar
+        
         const lLoja = document.getElementById('lista_loja'), lAta = document.getElementById('lista_atacado'), lEnt = document.getElementById('lista_entrega'), lEst = document.getElementById('lista_estoque'), lHist = document.getElementById('lista_historico');
         const sAC = document.getElementById('a_p_idx'), sEC = document.getElementById('e_p_idx'), sAA = document.getElementById('avulso_a_p'), sEA = document.getElementById('avulso_e_p');
         const bA = document.getElementById('busca_atacado').value.toLowerCase();
@@ -340,7 +331,7 @@
 
             lLoja.innerHTML += `<div class="card">
                 <div class="flex-row">
-                    <div><b>${p.nome}</b><br><small style="color:blue">Disponível: ${p.qtd}</small></div>
+                    <div><b>${p.nome}</b><br><small style="color:#007bff">Disponível: ${p.qtd}</small></div>
                     <button style="background:#007bff; color:white; padding:10px 15px;" onclick="vendaL(${i})">VENDER BALCÃO</button>
                 </div>
                 <div class="info-vendas">
@@ -354,13 +345,13 @@
 
             lEst.innerHTML += `<div class="card">
                 <div class="flex-row">
-                    <div><b>${p.nome}</b><br><small style="color:#666">Inicial do Dia: ${p.estoque_inicial || 0}</small></div> 
+                    <div><b>${p.nome}</b><br><small>Inicial do Dia: ${p.estoque_inicial || 0}</small></div> 
                     <span>Atual Cheio: <b>${p.qtd}</b> <button onclick="ajustar(${i}, 'qtd')">✏️</button></span>
                 </div>
-                <div class="flex-row" style="margin-top:10px; border-top: 1px solid #eee; padding-top:10px">
+                <div class="flex-row" style="margin-top:10px; border-top: 1px solid var(--border-card); padding-top:10px">
                     <div style="font-size: 11px; flex: 1">Vazios: <b>${p.vazios || 0}</b> <button onclick="ajustar(${i}, 'vazios')">✏️</button></div>
-                    <button class="btn-vazio" style="padding: 5px 10px;" onclick="mudarVazio(${i}, 1)">+1 Vazio</button>
-                    <button class="btn-vazio" style="padding: 5px 10px; margin-left:5px;" onclick="mudarVazio(${i}, -1)">-1 Vazio</button>
+                    <button class="btn-vazio" style="padding: 5px 10px; background:#666; color:#fff;" onclick="mudarVazio(${i}, 1)">+1 Vazio</button>
+                    <button class="btn-vazio" style="padding: 5px 10px; margin-left:5px; background:#666; color:#fff;" onclick="mudarVazio(${i}, -1)">-1 Vazio</button>
                 </div>
             </div>`;
         });
@@ -370,7 +361,7 @@
                 lAta.innerHTML += `<div class="card">
                     <div class="flex-row">
                         <div><b>${c.nome}</b><br><small>${db.produtos[c.pIdx]?.nome || 'Produto'} - R$ ${c.preco.toFixed(2)}</small></div>
-                        <div style="display:flex; gap:5px"><input type="number" id="q_a_${i}" placeholder="Qtd" style="margin:0; width:60px"><button style="background:#fd7e14; color:white; padding:10px" onclick="vendaA(${i})">VENDER</button></div>
+                        <div style="display:flex; gap:5px"><input type="number" id="q_a_${i}" placeholder="Qtd" style="margin:0; width:60px; background:var(--bg-container)"><button style="background:#fd7e14; color:white; padding:10px" onclick="vendaA(${i})">VENDER</button></div>
                     </div>
                     <div class="card-footer">
                         <button class="btn-acao edit" onclick="editarAtacado(${i})">✏️ Editar</button>
@@ -395,7 +386,6 @@
             }
         });
 
-        // Renderiza a lista visual do histórico na nova aba
         if(db.historico.length === 0) {
             lHist.innerHTML = '<p style="text-align:center; color:#888; font-size:13px; margin: 20px 0;">Nenhuma venda realizada hoje.</p>';
         } else {
@@ -469,37 +459,24 @@
     }
     function excluirEntrega(i) { if(confirm("Excluir este cliente de entrega?")) { db.entrega.splice(i, 1); renderizar(); } }
 
-    /* ---- Funções de Vendas (Atualizadas com Histórico e Notificação) ---- */
+    /* ---- Funções de Vendas ---- */
     function vendaL(i) { 
         if(db.produtos[i].qtd > 0) { 
-            db.produtos[i].v_l++; 
-            db.produtos[i].qtd--; 
-            db.produtos[i].vazios++; 
-            
-            // Registra histórico e envia a notificação
+            db.produtos[i].v_l++; db.produtos[i].qtd--; db.produtos[i].vazios++; 
             registrarHistorico(db.produtos[i].nome, 'Balcão', 1, db.produtos[i].pL);
             dispararNotificacao(`🛒 Balcão: 1x ${db.produtos[i].nome} vendida!`);
-            
             renderizar(); 
-        } else {
-            dispararNotificacao("⚠️ Sem estoque para realizar a venda!");
-        }
+        } else { dispararNotificacao("⚠️ Sem estoque!"); }
     }
     
     function vendaE(i) { 
         const p = db.produtos[db.entrega[i].pIdx]; 
         if(p.qtd > 0) { 
-            p.v_e++; 
-            p.qtd--; 
-            p.vazios++; 
-            
+            p.v_e++; p.qtd--; p.vazios++; 
             registrarHistorico(p.nome, 'Entrega', 1, p.pE);
             dispararNotificacao(`🚚 Entrega: Saída de ${p.nome} registrada!`);
-            
             renderizar(); 
-        } else {
-            dispararNotificacao("⚠️ Sem estoque para realizar a venda!");
-        }
+        } else { dispararNotificacao("⚠️ Sem estoque!"); }
     }
     
     function vendaA(i) { 
@@ -508,15 +485,11 @@
         if(q > 0 && p.qtd >= q) { 
             db.atacado[i].vendas_hoje = (db.atacado[i].vendas_hoje || 0) + q;
             p.v_a_r += (q * db.atacado[i].preco); p.v_a_q += q; p.qtd -= q; p.vazios += q; 
-            
             registrarHistorico(`${db.atacado[i].nome} (${p.nome})`, 'Atacado', q, (q * db.atacado[i].preco));
             dispararNotificacao(`🏢 Atacado: ${q}x para ${db.atacado[i].nome}!`);
-            
-            document.getElementById(`q_a_${i}`).value = ''; // limpa input
+            document.getElementById(`q_a_${i}`).value = '';
             renderizar(); 
-        } else {
-            dispararNotificacao("⚠️ Quantidade inválida ou estoque insuficiente!");
-        }
+        } else { dispararNotificacao("⚠️ Quantidade inválida ou sem estoque!"); }
     }
     
     function vendaAvulsa(tipo) {
@@ -528,27 +501,20 @@
                 registrarHistorico(`${p.nome} (Avulso)`, 'Entrega', 1, p.pE);
                 dispararNotificacao(`🚚 Entrega Avulsa: Saída de 1x ${p.nome}!`);
                 renderizar(); 
-            } else {
-                dispararNotificacao("⚠️ Sem estoque!");
-            }
+            } else { dispararNotificacao("⚠️ Sem estoque!"); }
         }
         else { 
             const q = parseInt(document.getElementById('avulso_a_q').value) || 0; 
             if(q>0 && p.qtd>=q) { 
-                const pr = parseFloat(prompt("Preço Unitário?", p.pL)); 
-                if(isNaN(pr)) return;
-                db.v_avulsa_a_q = (db.v_avulsa_a_q || 0) + q;
+                const pr = parseFloat(prompt("Preço Unitário?", p.pL)); if(isNaN(pr)) return;
+                db.v_avulsa_a_q = (db.v_avulsa_a_r || 0) + q;
                 db.v_avulsa_a_r = (db.v_avulsa_a_r || 0) + (q * pr);
                 p.v_a_r+=(q*pr); p.v_a_q+=q; p.qtd-=q; p.vazios+=q; 
-                
                 registrarHistorico(`${p.nome} (Atacado Avulso)`, 'Atacado', q, (q * pr));
                 dispararNotificacao(`⚡ Atacado Avulso: ${q}x ${p.nome}!`);
-                
                 document.getElementById('avulso_a_q').value = '';
                 renderizar(); 
-            } else {
-                dispararNotificacao("⚠️ Qtd inválida ou estoque insuficiente!");
-            }
+            } else { dispararNotificacao("⚠️ Qtd inválida ou sem estoque!"); }
         }
     }
 
@@ -567,10 +533,7 @@
         if(confirm("Deseja zerar as vendas do dia? O estoque ATUAL virará o INICIAL, as OBSERVAÇÕES, o HISTÓRICO e o RELATÓRIO DE CLIENTES serão resetados.")) { 
             db.produtos.forEach(p => { p.estoque_inicial = p.qtd; p.v_l=0; p.v_e=0; p.v_a_r=0; p.v_a_q=0; p.vazios=0; }); 
             db.atacado.forEach(c => { c.vendas_hoje = 0; });
-            db.v_avulsa_a_q = 0;
-            db.v_avulsa_a_r = 0;
-            db.obs = ''; 
-            db.historico = []; // Limpa o histórico para o novo dia
+            db.v_avulsa_a_q = 0; db.v_avulsa_a_r = 0; db.obs = ''; db.historico = [];
             renderizar(); 
         } 
     }
@@ -583,7 +546,6 @@
         const data = new Date();
         document.getElementById('data-relatorio').innerText = data.toLocaleDateString() + " às " + data.toLocaleTimeString();
 
-        // 1. Preenche tabela geral de produtos
         db.produtos.forEach(p => {
             const subtotal = (p.v_l * p.pL) + (p.v_e * p.pE) + p.v_a_r;
             totalGeral += subtotal;
@@ -600,7 +562,6 @@
                 </tr>`;
         });
 
-        // 2. Preenche a NOVA tabela detalhada de Clientes de Atacado
         const corpoAtacado = document.getElementById('tabela-atacado-corpo');
         const containerAtacado = document.getElementById('pdf-atacado-container');
         corpoAtacado.innerHTML = '';
@@ -622,25 +583,18 @@
             }
         });
 
-        // Adiciona vendas avulsas de atacado se houver
         if(db.v_avulsa_a_q && db.v_avulsa_a_q > 0) {
             vendeuAtacadoHoje = true;
             corpoAtacado.innerHTML += `
                 <tr style="background:#f9f9f9; font-style:italic;">
                     <td style="text-align:left; padding-left:15px;">⚡ Venda Avulsa (Sem Cadastro)</td>
-                    <td>Vários</td>
-                    <td>-</td>
-                    <td><b>${db.v_avulsa_a_q}</b></td>
-                    <td>R$ ${db.v_avulsa_a_r.toFixed(2)}</td>
+                    <td>Vários</td> <td>-</td> <td><b>${db.v_avulsa_a_q}</b></td> <td>R$ ${db.v_avulsa_a_r.toFixed(2)}</td>
                 </tr>`;
         }
 
-        // Exibe ou oculta a tabela de atacado no PDF dependendo do uso
         containerAtacado.style.display = vendeuAtacadoHoje ? "block" : "none";
-
         document.getElementById('pdf-total-geral').innerText = "R$ " + totalGeral.toFixed(2);
         
-        // Exibe bloco de Observações
         const containerObs = document.getElementById('pdf-obs-container');
         if(db.obs && db.obs.trim() !== "") {
             document.getElementById('pdf-obs').innerText = db.obs;
