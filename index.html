@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão v31</title>
+    <title>Água do Amigo - Gestão v32</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         /* --- CORES PADRÃO (MODO CLARO) --- */
@@ -75,6 +75,7 @@
         .btn-acao.edit { color: #007bff; background: #e7f1ff; }
         .btn-acao.del { color: #dc3545; background: #ffebee; }
         .btn-acao.zap { color: #25d366; background: #e8f9ee; }
+        .btn-acao.baixa { color: #fff; background: #28a745; border-radius: 6px; }
         body.dark-mode .btn-acao.edit { color: #4da6ff; background: #19222d; }
         body.dark-mode .btn-acao.del { color: #f75a68; background: #2d191a; }
         body.dark-mode .btn-acao.zap { color: #60e691; background: #162a1e; }
@@ -246,10 +247,10 @@
 <script>
     let db;
     try {
-        db = JSON.parse(localStorage.getItem('AGUA_V22'));
+        db = JSON.parse(localStorage.getItem('AGUA_V23'));
         if (!db || !db.produtos || !db.atacado || !db.entrega) { throw new Error("Nova Versão"); }
     } catch(e) {
-        db = { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, v_avulsa_a_pago: true, historico: [], temaEscuro: false };
+        db = { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, historico: [], temaEscuro: false };
     }
 
     if (!db.historico) db.historico = [];
@@ -258,7 +259,7 @@
     function alternarTema() {
         db.temaEscuro = !db.temaEscuro;
         aplicarTema();
-        localStorage.setItem('AGUA_V22', JSON.stringify(db));
+        localStorage.setItem('AGUA_V23', JSON.stringify(db));
     }
 
     function aplicarTema() {
@@ -275,7 +276,7 @@
     function dispararNotificacao(mensagem) {
         const notif = document.getElementById('notificacao');
         if(notif) {
-            notif.innerText = message = mensagem;
+            notif.innerText = mensagem;
             notif.classList.add('show');
             setTimeout(() => { notif.classList.remove('show'); }, 3000);
         }
@@ -286,7 +287,7 @@
         return `${agora.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})} - ${agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`;
     }
 
-    function registrarHistorico(produto, tipo, qtd, valorTotal, itemRef = null, pago = true, endereco = "") {
+    function registrarHistorico(produto, tipo, qtd, valorTotal, itemRef = null, pago = true, endereco = "", pIdx = null) {
         db.historico.unshift({ 
             hora: obterHorarioAtual(), 
             produto: produto, 
@@ -295,15 +296,44 @@
             total: valorTotal,
             ref: itemRef,
             pago: pago,
-            endereco: endereco
+            endereco: endereco,
+            pIdx: pIdx
         });
+    }
+
+    function darBaixaPagamento(index) {
+        const h = db.historico[index];
+        if (!h || h.pago) return;
+
+        if (confirm(`Confirmar que o valor de R$ ${h.total.toFixed(2)} já foi pago?`)) {
+            h.pago = true;
+            
+            // Localiza o produto associado para colocar o dinheiro no caixa do produto correspondente
+            let prod = db.produtos[h.pIdx];
+            if (!prod && h.pIdx === null) {
+                // Tenta buscar por string se o pIdx falhar
+                prod = db.produtos.find(p => h.produto.includes(p.nome));
+            }
+
+            if (prod) {
+                if (h.tipo === 'Entrega') {
+                    prod.v_e += h.qtd;
+                } else if (h.tipo === 'Atacado') {
+                    prod.v_a_r = (prod.v_a_r || 0) + h.total;
+                }
+            }
+            
+            dispararNotificacao("💰 Baixa dada! Valor adicionado ao caixa.");
+            renderizar();
+        }
     }
 
     function estornarVenda(index) {
         if (!confirm("Tem certeza que deseja cancelar e apagar esta venda? O estoque será devolvido.")) return;
 
         const venda = db.historico[index];
-        let prod = db.produtos.find(p => venda.produto.includes(p.nome));
+        let prod = db.produtos[venda.pIdx];
+        if (!prod) prod = db.produtos.find(p => venda.produto.includes(p.nome));
         
         if (prod) {
             prod.qtd += venda.qtd;
@@ -312,7 +342,7 @@
             if (venda.tipo === 'Balcão') {
                 prod.v_l = Math.max(0, prod.v_l - venda.qtd);
             } else if (venda.tipo === 'Entrega') {
-                prod.v_e = Math.max(0, prod.v_e - venda.qtd);
+                if (venda.pago) prod.v_e = Math.max(0, prod.v_e - venda.qtd);
             } else if (venda.tipo === 'Atacado') {
                 prod.v_a_q = Math.max(0, prod.v_a_q - venda.qtd);
                 if (venda.pago) {
@@ -348,7 +378,6 @@
         const h = db.historico[index];
         if(!h) return;
 
-        // Extrai o nome do cliente limpando marcações extras
         let clienteNome = h.produto.includes("Cliente:") ? h.produto.split("Cliente: ")[1] : "Cliente Avulso";
         let prodNome = h.produto.split(' - ')[0];
 
@@ -398,7 +427,7 @@
     }
 
     function renderizar() {
-        localStorage.setItem('AGUA_V22', JSON.stringify(db));
+        localStorage.setItem('AGUA_V23', JSON.stringify(db));
         aplicarTema();
         
         const lLoja = document.getElementById('lista_loja'), lAta = document.getElementById('lista_atacado'), lEnt = document.getElementById('lista_entrega'), lEst = document.getElementById('lista_estoque'), lHist = document.getElementById('lista_historico');
@@ -481,8 +510,10 @@
         } else {
             db.historico.forEach((h, index) => {
                 let tagClasse = h.tipo === 'Balcão' ? 'tag-balcao' : (h.tipo === 'Entrega' ? 'tag-entrega' : 'tag-atacado');
-                let tagPagamento = h.pago ? '<span class="tag-pagamento pago-sim">PAGO</span>' : '<span class="tag-pagamento pago-nao">PAGAR DEPOIS</span>';
+                let tagPagamento = h.pago ? '<span class="tag-pagamento pago-sim">PAGO</span>' : '<span class="tag-pagamento pago-nao">PENDENTE</span>';
                 
+                let botaoBaixa = !h.pago ? `<button class="btn-acao baixa" style="padding:6px 10px; font-size:11px;" onclick="darBaixaPagamento(${index})">💰 Dar Baixa</button>` : '';
+
                 let botoesZap = '';
                 if (h.tipo === 'Entrega') {
                     botoesZap = `
@@ -505,7 +536,8 @@
                                 <span class="hist-hora" style="margin-left:10px;">🕒 ${h.hora}</span>
                             </div>
                         </div>
-                        <div style="display:flex; gap:3px; align-items:center;">
+                        <div style="display:flex; gap:4px; align-items:center;">
+                            ${botaoBaixa}
                             ${botoesZap}
                             <button class="btn-acao del" style="padding: 6px; font-size:11px;" onclick="estornarVenda(${index})">❌</button>
                         </div>
@@ -517,7 +549,7 @@
         if(document.getElementById('faturamento_hoje')) document.getElementById('faturamento_hoje').innerText = "R$ " + totalFaturamentoGeral.toFixed(2);
     }
 
-    function salvarObs() { db.obs = document.getElementById('campo_obs').value; localStorage.setItem('AGUA_V22', JSON.stringify(db)); }
+    function salvarObs() { db.obs = document.getElementById('campo_obs').value; localStorage.setItem('AGUA_V23', JSON.stringify(db)); }
 
     function salvarProduto() {
         const n = document.getElementById('p_nome').value, pl = parseFloat(document.getElementById('p_preco_l').value), pe = parseFloat(document.getElementById('p_preco_e').value);
@@ -544,31 +576,33 @@
     function excluirEntrega(i) { if(confirm("Excluir?")) { db.entrega.splice(i, 1); renderizar(); } }
 
     function perguntarPagamento() {
-        return confirm("O cliente pagou agora?\n\n[OK] = Sim, já foi Pago (Entra no Caixa)\n[Cancelar] = Não, vai Pagar Depois (Fiado/Entregador)");
+        return confirm("O cliente pagou agora?\n\n[OK] = Sim, já foi Pago (Entra no Caixa)\n[Cancelar] = Não, vai Pagar Depois (Pendente)");
     }
 
     function vendaL(i) { 
         if(db.produtos[i].qtd > 0) { 
             db.produtos[i].v_l++; db.produtos[i].qtd--; db.produtos[i].vazios++; 
-            registrarHistorico(db.produtos[i].nome, 'Balcão', 1, db.produtos[i].pL, null, true);
+            registrarHistorico(db.produtos[i].nome, 'Balcão', 1, db.produtos[i].pL, null, true, "", i);
             dispararNotificacao("🛒 Balcão computado!"); renderizar(); 
         } else { dispararNotificacao("⚠️ Sem estoque!"); }
     }
     
     function vendaE(i) { 
-        const p = db.produtos[db.entrega[i].pIdx];
+        const pIdx = db.entrega[i].pIdx;
+        const p = db.produtos[pIdx];
         if(p.qtd > 0) { 
             let pago = perguntarPagamento();
             p.qtd--; p.vazios++; 
             if(pago) { p.v_e++; } 
-            registrarHistorico(`${p.nome} - Cliente: ${db.entrega[i].nome}`, 'Entrega', 1, p.pE, null, pago, db.entrega[i].end);
+            registrarHistorico(`${p.nome} - Cliente: ${db.entrega[i].nome}`, 'Entrega', 1, p.pE, null, pago, db.entrega[i].end, pIdx);
             dispararNotificacao("🚚 Saída de entrega registrada!"); renderizar(); 
         } else { dispararNotificacao("⚠️ Sem estoque!"); }
     }
     
     function vendaA(i) { 
         const q = parseInt(document.getElementById(`q_a_${i}`).value); 
-        const p = db.produtos[db.atacado[i].pIdx]; 
+        const pIdx = db.atacado[i].pIdx;
+        const p = db.produtos[pIdx]; 
         if(!q || q <= 0) return;
         
         if(p.qtd >= q) { 
@@ -576,7 +610,7 @@
             db.atacado[i].vendas_hoje = (db.atacado[i].vendas_hoje || 0) + q;
             p.v_a_q = (p.v_a_q || 0) + q; p.qtd -= q; p.vazios = (p.vazios || 0) + q; 
             if(pago) { p.v_a_r = (p.v_a_r || 0) + (q * db.atacado[i].preco); }
-            registrarHistorico(`${db.atacado[i].nome} (${p.nome})`, 'Atacado', q, (q * db.atacado[i].preco), i, pago);
+            registrarHistorico(`${db.atacado[i].nome} (${p.nome})`, 'Atacado', q, (q * db.atacado[i].preco), i, pago, "", pIdx);
             document.getElementById(`q_a_${i}`).value = ''; dispararNotificacao("🏢 Atacado registrada!"); renderizar(); 
         } else { dispararNotificacao("⚠️ Sem estoque!"); }
     }
@@ -593,12 +627,12 @@
             if(tipo === 'E') {
                 if(pago) p.v_e += q;
                 let endAvulso = prompt("Digite o endereço para o motoboy (ou deixe em branco):", "");
-                registrarHistorico(`${p.nome} (Entrega Avulsa)`, 'Entrega', q, (q * p.pE), null, pago, endAvulso);
+                registrarHistorico(`${p.nome} (Entrega Avulsa)`, 'Entrega', q, (q * p.pE), null, pago, endAvulso, pIdx);
             } else {
                 const pr = parseFloat(prompt("Preço Unitário?", p.pL)) || p.pL;
                 p.v_a_q += q;
                 if(pago) { p.v_a_r += (q * pr); }
-                registrarHistorico(`${p.nome} (Atacado Avulso)`, 'Atacado', q, (q * pr), null, pago);
+                registrarHistorico(`${p.nome} (Atacado Avulso)`, 'Atacado', q, (q * pr), null, pago, "", pIdx);
             }
             document.getElementById(tipo === 'A' ? 'avulso_a_q' : 'avulso_e_q').value = '';
             dispararNotificacao("⚡ Registro Avulso feito!"); renderizar();
