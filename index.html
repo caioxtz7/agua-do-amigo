@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão v31</title>
+    <title>Água do Amigo - Gestão v30</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         /* --- CORES PADRÃO (MODO CLARO) --- */
@@ -70,17 +70,14 @@
         
         .info-vendas { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-card); font-size: 11px; color: var(--texto-pequeno); display: flex; flex-wrap: wrap; gap: 8px; }
 
-        .card-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-card); display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+        .card-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-card); display: flex; justify-content: flex-end; gap: 10px; }
         .btn-acao { background: none; border: none; padding: 5px 8px; font-size: 12px; cursor: pointer; border-radius: 4px; font-weight: bold; }
         .btn-acao.edit { color: #007bff; background: #e7f1ff; }
         .btn-acao.del { color: #dc3545; background: #ffebee; }
         .btn-acao.zap { color: #25d366; background: #e8f9ee; }
-        .btn-acao.pagar { color: #fd7e14; background: #fff3cd; }
-        
         body.dark-mode .btn-acao.edit { color: #4da6ff; background: #19222d; }
         body.dark-mode .btn-acao.del { color: #f75a68; background: #2d191a; }
         body.dark-mode .btn-acao.zap { color: #60e691; background: #162a1e; }
-        body.dark-mode .btn-acao.pagar { color: #ffb066; background: #2e2419; }
 
         .total-box { background: var(--bg-total-box); color: #fff; padding: 20px; border-radius: 12px; text-align: center; margin-top: 15px; }
         body.dark-mode .total-box { border: 1px solid #323238; }
@@ -101,6 +98,637 @@
         .tag-balcao { background: #007bff; }
         .tag-entrega { background: #17a2b8; }
         .tag-atacado { background: #fd7e14; }
-        .tag-recebimento { background: #28a745; }
 
         .btn-backup { background: #6c757d; color: white; padding: 10px; font-size: 13px; border-radius: 8px; flex: 1; text-align: center; }
+
+        #relatorio-area { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #relatorio-area, #relatorio-area * { visibility: visible; }
+            #relatorio-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; color: #000 !important; background: #fff !important; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+            th, td { border: 1px solid #333; padding: 8px; text-align: center; color: #000 !important; }
+            th { background: #eee; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="notificacao">Venda realizada! 🎉</div>
+
+<div class="container">
+    <button class="btn-tema" onclick="alternarTema()">🌙 ESCURO</button>
+    <h1>💧 Água do Amigo</h1>
+
+    <div class="abas">
+        <div class="aba active" onclick="guia('loja', this)">LOJA</div>
+        <div class="aba" onclick="guia('atacado', this)">ATACADO</div>
+        <div class="aba" onclick="guia('entrega', this)">ENTREGA</div>
+        <div class="aba" onclick="guia('estoque', this)">ESTOQUE</div>
+        <div class="aba" onclick="guia('historico', this)">📜 HISTÓRICO</div>
+        <div class="aba" onclick="guia('obs', this)" style="background: #fff3cd; color: #856404;">📝 OBS</div>
+    </div>
+
+    <div id="loja" class="secao active">
+        <div class="caixa-form">
+            <strong>⚙️ Cadastrar Produto:</strong>
+            <input type="text" id="p_nome" placeholder="Marca (Ex: Indaiá)">
+            <input type="number" id="p_preco_l" placeholder="Preço Balcão (R$)">
+            <input type="number" id="p_preco_e" placeholder="Preço Entrega (R$)">
+            <button class="btn-verde" onclick="salvarProduto()">SALVAR PRODUTO</button>
+        </div>
+        <div id="lista_loja"></div>
+        <div class="total-box">CAIXA DO DIA<span class="valor-total" id="faturamento_hoje">R$ 0,00</span></div>
+    </div>
+
+    <div id="atacado" class="secao">
+        <div class="caixa-form">
+            <strong>🆕 Cadastrar Cliente Atacado:</strong>
+            <input type="text" id="a_nome" placeholder="Nome do Cliente">
+            <select id="a_p_idx"></select>
+            <input type="number" id="a_preco" placeholder="Preço Combinado (R$)">
+            <button class="btn-verde" style="background:#fd7e14" onclick="salvarAtacado()">SALVAR CLIENTE</button>
+        </div>
+        <div class="venda-avulsa">
+            <b>⚡ Venda Atacado Avulsa:</b>
+            <div class="flex-row">
+                <select id="avulso_a_p" style="margin:0"></select>
+                <input type="number" id="avulso_a_q" placeholder="Qtd" style="margin:0; width:70px">
+                <button onclick="vendaAvulsa('A')" style="background:#fd7e14; color:#fff; padding:12px">VENDER</button>
+            </div>
+        </div>
+        <div class="busca-container"><input type="text" id="busca_atacado" class="input-busca" placeholder="🔍 Pesquisar cliente..." onkeyup="renderizar()"></div>
+        <div id="lista_atacado"></div>
+    </div>
+
+    <div id="entrega" class="secao">
+        <div class="caixa-form">
+            <strong>🆕 Cadastrar Cliente Entrega:</strong>
+            <input type="text" id="e_nome" placeholder="Nome do Cliente">
+            <input type="text" id="e_end" placeholder="Endereço / Rua">
+            <select id="e_p_idx"></select>
+            <button class="btn-verde" style="background:#17a2b8" onclick="salvarEntrega()">SALVAR CLIENTE</button>
+        </div>
+        <div class="venda-avulsa">
+            <b>⚡ Saída Entrega Avulsa:</b>
+            <div class="flex-row">
+                <select id="avulso_e_p" style="margin:0"></select>
+                <input type="number" id="avulso_e_q" placeholder="Qtd" style="margin:0; width:70px">
+                <button onclick="vendaAvulsa('E')" style="background:#17a2b8; color:#fff; padding:12px">SAÍDA</button>
+            </div>
+        </div>
+        <div class="busca-container"><input type="text" id="busca_entrega" class="input-busca" placeholder="🔍 Pesquisar nome ou rua..." onkeyup="renderizar()"></div>
+        <div id="lista_entrega"></div>
+    </div>
+
+    <div id="estoque" class="secao">
+        <div id="lista_estoque"></div>
+    </div>
+
+    <div id="historico" class="secao">
+        <div class="caixa-form">
+            <strong>📋 Registro de Vendas Recentes:</strong>
+            <div id="lista_historico" style="margin-top: 10px; max-height: 400px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <div id="obs" class="secao">
+        <div class="caixa-form" style="background: #fff9e6; border-color: #ffeeba;">
+            <strong>📝 Anotações e Observações do Dia:</strong>
+            <textarea id="campo_obs" rows="8" placeholder="Anotações gerais..." oninput="salvarObs()"></textarea>
+        </div>
+    </div>
+
+    <div style="margin-top:20px; display: flex; flex-direction: column; gap: 10px;">
+        <button onclick="gerarPDF()" style="background:#000; color:#fff; padding:18px; width:100%; font-size: 16px; border-radius:10px;">📄 GERAR PLANILHA DE FECHAMENTO</button>
+        
+        <div style="display: flex; gap: 10px;">
+            <button onclick="exportarDados()" class="btn-backup">💾 Exportar Backup</button>
+            <button onclick="importarDados()" class="btn-backup" style="background:#a370f7;">📂 Importar Backup</button>
+        </div>
+
+        <button onclick="zerarVendas()" style="background:none; color:red; padding:10px; text-decoration: underline; font-size: 13px;">Zerar Vendas para Iniciar Novo Dia</button>
+    </div>
+</div>
+
+<div id="relatorio-area">
+    <h2 style="text-align:center; margin-bottom:5px;">Fechamento de Caixa - Água do Amigo</h2>
+    <p id="data-relatorio" style="text-align:center; font-weight:bold; margin-top:0; margin-bottom:20px;"></p>
+    <h3>📦 Resumo Geral de Produtos</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Produto</th><th>Estoque Inicial</th><th>Balcão</th><th>Entrega</th><th>Atacado Total</th><th>Estoque Final</th><th>Vazios</th><th>Total (R$)</th>
+            </tr>
+        </thead>
+        <tbody id="tabela-corpo"></tbody>
+    </table>
+    <div id="pdf-atacado-container" style="margin-top: 25px;">
+        <h3>🏢 Detalhamento do Atacado (Por Cliente)</h3>
+        <table>
+            <thead>
+                <tr><th>Nome do Cliente</th><th>Produto</th><th>Preço Un.</th><th>Qtd</th><th>Subtotal</th></tr>
+            </thead>
+            <tbody id="tabela-atacado-corpo"></tbody>
+        </table>
+    </div>
+    <h3 style="text-align:right; margin-top:20px; font-size: 16px;">TOTAL GERAL DO DIA: <span id="pdf-total-geral"></span></h3>
+    <div id="pdf-obs-container" style="margin-top: 25px; border: 1px dashed #333; padding: 12px;">
+        <strong>📝 Observações:</strong>
+        <p id="pdf-obs" style="white-space: pre-wrap; font-size: 13px; margin-top:5px;"></p>
+    </div>
+</div>
+
+<script>
+    // Inicialização segura do banco de dados local
+    let db;
+    try {
+        db = JSON.parse(localStorage.getItem('AGUA_V21'));
+        if (!db || !db.produtos || !db.atacado || !db.entrega) {
+            throw new Error("Estrutura antiga ou corrompida");
+        }
+    } catch(e) {
+        // Fallback preventivo caso a versão guardada em cache trave o script novo
+        db = { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, historico: [], temaEscuro: false };
+    }
+
+    if (!db.historico) db.historico = [];
+    if (db.temaEscuro === undefined) db.temaEscuro = false;
+
+    function alternarTema() {
+        db.temaEscuro = !db.temaEscuro;
+        aplicarTema();
+        localStorage.setItem('AGUA_V21', JSON.stringify(db));
+    }
+
+    function aplicarTema() {
+        const btn = document.querySelector('.btn-tema');
+        if (db.temaEscuro) {
+            document.body.classList.add('dark-mode');
+            if(btn) btn.innerText = "☀️ CLARO";
+        } else {
+            document.body.classList.remove('dark-mode');
+            if(btn) btn.innerText = "🌙 ESCURO";
+        }
+    }
+
+    function dispararNotificacao(mensagem) {
+        const notif = document.getElementById('notificacao');
+        if(notif) {
+            notif.innerText = mensagem;
+            notif.classList.add('show');
+            setTimeout(() => { notif.classList.remove('show'); }, 3000);
+        }
+    }
+
+    function obterHorarioAtual() {
+        const agora = new Date();
+        const dataStr = agora.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'});
+        const horaStr = agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+        return `${dataStr} - ${horaStr}`;
+    }
+
+    function registrarHistorico(produto, tipo, qtd, valorTotal, itemRef = null) {
+        db.historico.unshift({ 
+            hora: obterHorarioAtual(), 
+            produto: produto, 
+            tipo: tipo, 
+            qtd: qtd, 
+            total: valorTotal,
+            ref: itemRef
+        });
+    }
+
+    function estornarVenda(index) {
+        if (!confirm("Tem certeza que deseja cancelar e apagar esta venda? O estoque será devolvido e o dinheiro removido do caixa.")) return;
+
+        const venda = db.historico[index];
+        let prod = db.produtos.find(p => venda.produto.includes(p.nome));
+        
+        if (prod) {
+            prod.qtd += venda.qtd;
+            prod.vazios = Math.max(0, (prod.vazios || 0) - venda.qtd);
+
+            if (venda.tipo === 'Balcão') {
+                prod.v_l = Math.max(0, prod.v_l - venda.qtd);
+            } else if (venda.tipo === 'Entrega') {
+                prod.v_e = Math.max(0, prod.v_e - venda.qtd);
+            } else if (venda.tipo === 'Atacado') {
+                prod.v_a_q = Math.max(0, prod.v_a_q - venda.qtd);
+                prod.v_a_r = Math.max(0, prod.v_a_r - venda.total);
+                
+                if (venda.ref !== null && db.atacado[venda.ref]) {
+                    db.atacado[venda.ref].vendas_hoje = Math.max(0, (db.atacado[venda.ref].vendas_hoje || 0) - venda.qtd);
+                } else if (venda.produto.includes("(Atacado Avulso)")) {
+                    db.v_avulsa_a_q = Math.max(0, (db.v_avulsa_a_q || 0) - venda.qtd);
+                    db.v_avulsa_a_r = Math.max(0, (db.v_avulsa_a_r || 0) - venda.total);
+                }
+            }
+        }
+
+        db.historico.splice(index, 1);
+        dispararNotificacao("❌ Venda cancelada e ajustada!");
+        renderizar();
+    }
+
+    function enviarConfirmacaoWhats(index) {
+        const venda = db.historico[index];
+        if(!venda) return;
+
+        let textoMsg = `*💧 Água do Amigo - Confirmação*\n\n`;
+        textoMsg += `Seu pedido foi registrado com sucesso! 🎉\n\n`;
+        textoMsg += `📋 *Resumo:*\n`;
+        textoMsg += `▪️ *Item:* ${venda.qtd}x ${venda.produto}\n`;
+        textoMsg += `▪️ *Tipo:* ${venda.tipo}\n`;
+        textoMsg += `▪️ *Total:* R$ ${venda.total.toFixed(2)}\n`;
+        textoMsg += `▪️ *Horário:* ${venda.hora}\n\n`;
+        textoMsg += `Agradecemos a preferência! Já estamos liberando a saída. 👍`;
+
+        const urlWhats = `https://api.whatsapp.com/send?text=${encodeURIComponent(textoMsg)}`;
+        window.open(urlWhats, '_blank');
+    }
+
+    function guia(id, el) {
+        document.querySelectorAll('.secao').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.aba').forEach(a => a.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        el.classList.add('active');
+        renderizar();
+    }
+
+    function exportarDados() {
+        const dadosTexto = JSON.stringify(db, null, 2);
+        const blob = new Blob([dadosTexto], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `backup_agua_do_amigo.json`;
+        a.click();
+        dispararNotificacao("💾 Backup baixado com sucesso!");
+    }
+
+    document.addEventListener("DOMContentLoaded", () => { renderizar(); });
+
+    function importarDados() {
+        const input = document.createElement("input");
+        input.type = "file"; input.accept = ".json";
+        input.onchange = e => {
+            const arquivo = e.target.files[0];
+            const leitor = new FileReader();
+            leitor.onload = evento => {
+                try {
+                    const dadosImportados = JSON.parse(evento.target.result);
+                    if(dadosImportados.produtos && dadosImportados.atacado) {
+                        db = dadosImportados;
+                        localStorage.setItem('AGUA_V21', JSON.stringify(db));
+                        renderizar();
+                        dispararNotificacao("📂 Dados restaurados com sucesso!");
+                    } else { alert("Arquivo de backup inválido!"); }
+                } catch(err) { alert("Erro ao ler o arquivo."); }
+            };
+            leitor.readAsText(arquivo);
+        };
+        input.click();
+    }
+
+    function renderizar() {
+        localStorage.setItem('AGUA_V21', JSON.stringify(db));
+        aplicarTema();
+        
+        const lLoja = document.getElementById('lista_loja'), lAta = document.getElementById('lista_atacado'), lEnt = document.getElementById('lista_entrega'), lEst = document.getElementById('lista_estoque'), lHist = document.getElementById('lista_historico');
+        const sAC = document.getElementById('a_p_idx'), sEC = document.getElementById('e_p_idx'), sAA = document.getElementById('avulso_a_p'), sEA = document.getElementById('avulso_e_p');
+        
+        if(!lLoja) return; // Trava contra carregamentos parciais
+
+        const buscaAElement = document.getElementById('busca_atacado');
+        const buscaEElement = document.getElementById('busca_entrega');
+        const bA = buscaAElement ? buscaAElement.value.toLowerCase() : '';
+        const bE = buscaEElement ? buscaEElement.value.toLowerCase() : '';
+
+        lLoja.innerHTML = lAta.innerHTML = lEnt.innerHTML = lEst.innerHTML = lHist.innerHTML = '';
+        sAC.innerHTML = sEC.innerHTML = sAA.innerHTML = sEA.innerHTML = '<option value="">Escolha o Produto...</option>';
+        
+        let totalFaturamento = 0;
+
+        db.produtos.forEach((p, i) => {
+            totalFaturamento += (p.v_l * (p.pL || 0)) + (p.v_e * (p.pE || 0)) + (p.v_a_r || 0);
+            const opt = `<option value="${i}">${p.nome}</option>`;
+            sAC.innerHTML += opt; sEC.innerHTML += opt; sAA.innerHTML += opt; sEA.innerHTML += opt;
+
+            lLoja.innerHTML += `<div class="card">
+                <div class="flex-row">
+                    <div><b>${p.nome}</b><br><small style="color:#007bff">Disponível: ${p.qtd}</small></div>
+                    <button style="background:#007bff; color:white; padding:10px 15px;" onclick="vendaL(${i})">VENDER BALCÃO</button>
+                </div>
+                <div class="info-vendas">
+                    <span>🛒 Balcão: <b>${p.v_l}</b></span> | <span>🚚 Entrega: <b>${p.v_e}</b></span> | <span>🏢 Atacado: <b>${p.v_a_q}</b></span>
+                </div>
+                <div class="card-footer">
+                    <button class="btn-acao edit" onclick="editarProduto(${i})">✏️ Editar</button>
+                    <button class="btn-acao del" onclick="excluirProduto(${i})">🗑️ Excluir</button>
+                </div>
+            </div>`;
+
+            lEst.innerHTML += `<div class="card">
+                <div class="flex-row">
+                    <div><b>${p.nome}</b><br><small>Inicial do Dia: ${p.estoque_inicial || 0}</small></div> 
+                    <span>Atual Cheio: <b>${p.qtd}</b> <button onclick="ajustar(${i}, 'qtd')">✏️</button></span>
+                </div>
+                <div class="flex-row" style="margin-top:10px; border-top: 1px solid var(--border-card); padding-top:10px">
+                    <div style="font-size: 11px; flex: 1">Vazios: <b>${p.vazios || 0}</b> <button onclick="ajustar(${i}, 'vazios')">✏️</button></div>
+                    <button class="btn-vazio" style="padding: 5px 10px; background:#666; color:#fff;" onclick="mudarVazio(${i}, 1)">+1 Vazio</button>
+                    <button class="btn-vazio" style="padding: 5px 10px; margin-left:5px; background:#666; color:#fff;" onclick="mudarVazio(${i}, -1)">-1 Vazio</button>
+                </div>
+            </div>`;
+        });
+
+        db.atacado.forEach((c, i) => {
+            if (c.nome.toLowerCase().includes(bA)) {
+                lAta.innerHTML += `<div class="card">
+                    <div class="flex-row">
+                        <div><b>${c.nome}</b><br><small>${db.produtos[c.pIdx]?.nome || 'Produto'} - R$ ${c.preco.toFixed(2)}</small></div>
+                        <div style="display:flex; gap:5px"><input type="number" id="q_a_${i}" placeholder="Qtd" style="margin:0; width:60px; background:var(--bg-container)"><button style="background:#fd7e14; color:white; padding:10px" onclick="vendaA(${i})">VENDER</button></div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn-acao edit" onclick="editarAtacado(${i})">✏️ Editar</button>
+                        <button class="btn-acao del" onclick="excluirAtacado(${i})">🗑️ Excluir</button>
+                    </div>
+                </div>`;
+            }
+        });
+
+        db.entrega.forEach((c, i) => {
+            if (c.nome.toLowerCase().includes(bE) || (c.end && c.end.toLowerCase().includes(bE))) {
+                lEnt.innerHTML += `<div class="card">
+                    <div class="flex-row">
+                        <div><b>${c.nome}</b><br><small>${c.end || 'Sem endereço'}</small></div>
+                        <button style="background:#17a2b8; color:white; padding:10px" onclick="vendaE(${i})">SAÍDA +1</button>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn-acao edit" onclick="editarEntrega(${i})">✏️ Editar</button>
+                        <button class="btn-acao del" onclick="excluirEntrega(${i})">🗑️ Excluir</button>
+                    </div>
+                </div>`;
+            }
+        });
+
+        if(db.historico.length === 0) {
+            lHist.innerHTML = '<p style="text-align:center; color:#888; font-size:13px; margin: 20px 0;">Nenhuma venda realizada hoje.</p>';
+        } else {
+            db.historico.forEach((h, index) => {
+                let tagClasse = h.tipo === 'Balcão' ? 'tag-balcao' : (h.tipo === 'Entrega' ? 'tag-entrega' : 'tag-atacado');
+                let botaoZap = (h.tipo === 'Entrega' || h.tipo === 'Atacado') ? `<button class="btn-acao zap" style="padding: 8px 12px; font-size:11px;" onclick="enviarConfirmacaoWhats(${index})">💬 Zap</button>` : '';
+                
+                lHist.innerHTML += `
+                    <div class="item-historico">
+                        <div style="flex: 1;">
+                            <div>
+                                <span class="hist-tag ${tagClasse}">${h.tipo.toUpperCase()}</span>
+                                <span style="margin-left:5px"><b>${h.qtd}x</b> ${h.produto}</span>
+                            </div>
+                            <div style="margin-top:4px;">
+                                <span style="font-weight:bold; color:#28a745; font-size:15px;">R$ ${h.total.toFixed(2)}</span>
+                                <span class="hist-hora" style="margin-left:10px;">🕒 ${h.hora}</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:5px; align-items:center;">
+                            ${botaoZap}
+                            <button class="btn-acao del" style="padding: 8px 12px; font-size:11px;" onclick="estornarVenda(${index})">❌ Estornar</button>
+                        </div>
+                    </div>`;
+            });
+        }
+        
+        const campoObsElement = document.getElementById('campo_obs');
+        if(campoObsElement) campoObsElement.value = db.obs || '';
+        
+        const fatHojeElement = document.getElementById('faturamento_hoje');
+        if(fatHojeElement) fatHojeElement.innerText = "R$ " + totalFaturamento.toFixed(2);
+    }
+
+    function salvarObs() {
+        db.obs = document.getElementById('campo_obs').value;
+        localStorage.setItem('AGUA_V21', JSON.stringify(db));
+    }
+
+    /* ---- FUNÇÕES DE SALVAMENTO ---- */
+    function salvarProduto() {
+        const n = document.getElementById('p_nome').value, pl = parseFloat(document.getElementById('p_preco_l').value), pe = parseFloat(document.getElementById('p_preco_e').value);
+        if(n) { db.produtos.push({nome: n, pL: pl, pE: pe, qtd: 0, estoque_inicial: 0, vazios: 0, v_l: 0, v_e: 0, v_a_r: 0, v_a_q: 0}); document.getElementById('p_nome').value=''; document.getElementById('p_preco_l').value=''; document.getElementById('p_preco_e').value=''; renderizar(); }
+    }
+    function salvarAtacado() { 
+        const n = document.getElementById('a_nome').value, p = document.getElementById('a_p_idx').value, pr = parseFloat(document.getElementById('a_preco').value); 
+        if(n && p!=="") { db.atacado.push({nome: n, pIdx: parseInt(p), preco: pr, vendas_hoje: 0}); document.getElementById('a_nome').value=''; document.getElementById('a_preco').value=''; renderizar(); } 
+    }
+    function salvarEntrega() { 
+        const n = document.getElementById('e_nome').value, e = document.getElementById('e_end').value, p = document.getElementById('e_p_idx').value; 
+        if(n && p!=="") { db.entrega.push({nome: n, end: e, pIdx: parseInt(p)}); document.getElementById('e_nome').value=''; document.getElementById('e_end').value=''; renderizar(); } 
+    }
+
+    /* ---- EDIÇÕES ---- */
+    function editarProduto(i) {
+        let p = db.produtos[i];
+        let nome = prompt("Nome do Produto:", p.nome); if(nome === null) return;
+        let pL = prompt("Preço Balcão (R$):", p.pL); if(pL === null) return;
+        let pE = prompt("Preço Entrega (R$):", p.pE); if(pE === null) return;
+        p.nome = nome || p.nome; p.pL = parseFloat(pL) || 0; p.pE = parseFloat(pE) || 0; renderizar();
+    }
+    function excluirProduto(i) {
+        if(confirm("Deseja mesmo excluir este produto? Clientes vinculados a ele também serão excluídos.")) {
+            db.produtos.splice(i, 1);
+            db.atacado = db.atacado.filter(c => c.pIdx !== i).map(c => { if(c.pIdx > i) c.pIdx--; return c; });
+            db.entrega = db.entrega.filter(c => c.pIdx !== i).map(c => { if(c.pIdx > i) c.pIdx--; return c; });
+            renderizar();
+        }
+    }
+    function editarAtacado(i) {
+        let c = db.atacado[i];
+        let nome = prompt("Nome do Cliente:", c.nome); if(nome === null) return;
+        let preco = prompt("Preço Combinado (R$):", c.preco); if(preco === null) return;
+        c.nome = nome || c.nome; c.preco = parseFloat(preco) || 0; renderizar();
+    }
+    function excluirAtacado(i) { if(confirm("Excluir este cliente?")) { db.atacado.splice(i, 1); renderizar(); } }
+    function editarEntrega(i) {
+        let c = db.entrega[i];
+        let nome = prompt("Nome do Cliente:", c.nome); if(nome === null) return;
+        let end = prompt("Endereço / Rua:", c.end); if(end === null) return;
+        c.nome = nome || c.nome; c.end = end || c.end; renderizar();
+    }
+    function excluirEntrega(i) { if(confirm("Excluir este cliente?")) { db.entrega.splice(i, 1); renderizar(); } }
+
+    /* ---- LOGICA DE VENDAS ---- */
+    function vendaL(i) { 
+        if(!confirm(`Confirmar venda Balcão de 1x ${db.produtos[i].nome}?`)) return;
+        if(db.produtos[i].qtd > 0) { 
+            db.produtos[i].v_l++; db.produtos[i].qtd--; db.produtos[i].vazios++; 
+            registrarHistorico(db.produtos[i].nome, 'Balcão', 1, db.produtos[i].pL);
+            dispararNotificacao(`🛒 Balcão: 1x ${db.produtos[i].nome} vendida!`);
+            renderizar(); 
+        } else { dispararNotificacao("⚠️ Sem estoque!"); }
+    }
+    
+    function vendaE(i) { 
+        const p = db.produtos[db.entrega[i].pIdx];
+        if(!confirm(`Confirmar saída para Entrega de 1x ${p.nome} para ${db.entrega[i].nome}?`)) return;
+        if(p.qtd > 0) { 
+            p.v_e++; p.qtd--; p.vazios++; 
+            registrarHistorico(`${p.nome} - Cliente: ${db.entrega[i].nome}`, 'Entrega', 1, p.pE);
+            dispararNotificacao(`🚚 Entrega: Saída de ${p.nome} registrada!`);
+            renderizar(); 
+        } else { dispararNotificacao("⚠️ Sem estoque!"); }
+    }
+    
+    function vendaA(i) { 
+        const q = parseInt(document.getElementById(`q_a_${i}`).value); 
+        const p = db.produtos[db.atacado[i].pIdx]; 
+        if(!q || q <= 0) return dispararNotificacao("⚠️ Insira uma quantidade válida!");
+        if(!confirm(`Confirmar venda Atacado de ${q}x ${p.nome} para ${db.atacado[i].nome}?`)) return;
+        
+        if(p.qtd >= q) { 
+            db.atacado[i].vendas_hoje = (db.atacado[i].vendas_hoje || 0) + q;
+            p.v_a_r = (p.v_a_r || 0) + (q * db.atacado[i].preco); p.v_a_q = (p.v_a_q || 0) + q; p.qtd -= q; p.vazios = (p.vazios || 0) + q; 
+            registrarHistorico(`${db.atacado[i].nome} (${p.nome})`, 'Atacado', q, (q * db.atacado[i].preco), i);
+            dispararNotificacao("🏢 Atacado registrada!");
+            document.getElementById(`q_a_${i}`).value = '';
+            renderizar(); 
+        } else { dispararNotificacao("⚠️ Sem estoque suficiente!"); }
+    }
+    
+    function vendaAvulsa(tipo) {
+        const pIdx = document.getElementById(tipo === 'A' ? 'avulso_a_p' : 'avulso_e_p').value; if(pIdx === "") return;
+        const p = db.produtos[pIdx];
+        
+        if(tipo==='E') { 
+            const q = parseInt(document.getElementById('avulso_e_q').value) || 0;
+            if(q <= 0) return dispararNotificacao("⚠️ Insira uma quantidade válida!");
+            if(!confirm(`Confirmar Saída Avulsa de ${q}x ${p.nome}?`)) return;
+            
+            if(p.qtd >= q) { 
+                p.v_e += q; p.qtd -= q; p.vazios += q; 
+                registrarHistorico(`${p.nome} (Entrega Avulsa)`, 'Entrega', q, (q * p.pE));
+                dispararNotificacao(`🚚 Entrega Avulsa: ${q}x registradas!`);
+                document.getElementById('avulso_e_q').value = '';
+                renderizar(); 
+            } else { dispararNotificacao("⚠️ Sem estoque suficiente!"); }
+        }
+        else { 
+            const q = parseInt(document.getElementById('avulso_a_q').value) || 0; 
+            if(q <= 0) return dispararNotificacao("⚠️ Insira uma quantidade válida!");
+            if(!confirm(`Confirmar Venda Atacado Avulsa de ${q}x ${p.nome}?`)) return;
+            
+            if(p.qtd>=q) { 
+                const pr = parseFloat(prompt("Preço Unitário?", p.pL)); if(isNaN(pr)) return;
+                db.v_avulsa_a_q = (db.v_avulsa_a_q || 0) + q;
+                db.v_avulsa_a_r = (db.v_avulsa_a_r || 0) + (q * pr);
+                p.v_a_r = (p.v_a_r || 0) + (q*pr); p.v_a_q = (p.v_a_q || 0) + q; p.qtd-=q; p.vazios = (p.vazios || 0) + q; 
+                registrarHistorico(`${p.nome} (Atacado Avulso)`, 'Atacado', q, (q * pr));
+                dispararNotificacao(`⚡ Atacado Avulso registrado!`);
+                document.getElementById('avulso_a_q').value = '';
+                renderizar(); 
+            } else { dispararNotificacao("⚠️ Sem estoque suficiente!"); }
+        }
+    }
+
+    /* ---- ESTOQUE ---- */
+    function ajustar(i, campo) { 
+        let atual = db.produtos[i][campo] || 0;
+        let novoValor = prompt(`Ajustar valor atual de [${campo}] (Atual: ${atual}):`, atual);
+        if (novoValor === null) return;
+        novoValor = parseInt(novoValor);
+        if (isNaN(novoValor) || novoValor < 0) return alert("Valor inválido!");
+        
+        db.produtos[i][campo] = novoValor;
+        if(campo === 'qtd' && (db.produtos[i].estoque_inicial === 0 || db.produtos[i].estoque_inicial === undefined)) {
+            db.produtos[i].estoque_inicial = novoValor;
+        }
+        renderizar();
+    }
+
+    function mudarVazio(i, qtd) {
+        db.produtos[i].vazios = Math.max(0, (db.produtos[i].vazios || 0) + qtd);
+        renderizar();
+    }
+
+    function zerarVendas() {
+        if(!confirm("Deseja zerar as vendas e faturamento para iniciar um novo dia? Seu estoque ATUAL e clientes cadastrados NÃO serão apagados. Apenas o faturamento e histórico do dia zeram.")) return;
+        
+        db.produtos.forEach(p => {
+            p.estoque_inicial = p.qtd;
+            p.v_l = 0; p.v_e = 0; p.v_a_q = 0; p.v_a_r = 0; p.vazios = 0;
+        });
+        db.v_avulsa_a_q = 0;
+        db.v_avulsa_a_r = 0;
+        db.historico = [];
+        db.obs = "";
+        
+        dispararNotificacao("✨ Novo dia iniciado com sucesso!");
+        renderizar();
+    }
+
+    /* ---- FECHAMENTO ---- */
+    function gerarPDF() {
+        const corpo = document.getElementById('tabela-corpo');
+        const corpoAtacado = document.getElementById('tabela-atacado-corpo');
+        document.getElementById('data-relatorio').innerText = `Data de Emissão: ${obterHorarioAtual()}`;
+        corpo.innerHTML = '';
+        corpoAtacado.innerHTML = '';
+        
+        let totalGeral = 0;
+
+        db.produtos.forEach(p => {
+            let totalProd = (p.v_l * (p.pL || 0)) + (p.v_e * (p.pE || 0)) + (p.v_a_r || 0);
+            totalGeral += totalProd;
+            corpo.innerHTML += `<tr>
+                <td>${p.nome}</td>
+                <td>${p.estoque_inicial || 0}</td>
+                <td>${p.v_l}</td>
+                <td>${p.v_e}</td>
+                <td>${p.v_a_q}</td>
+                <td>${p.qtd}</td>
+                <td>${p.vazios || 0}</td>
+                <td>R$ ${totalProd.toFixed(2)}</td>
+            </tr>`;
+        });
+
+        let temAtacado = false;
+        db.atacado.forEach(c => {
+            if((c.vendas_hoje || 0) > 0) {
+                temAtacado = true;
+                let sub = c.vendas_hoje * c.preco;
+                corpoAtacado.innerHTML += `<tr>
+                    <td>${c.nome}</td>
+                    <td>${db.produtos[c.pIdx]?.nome || 'Produto'}</td>
+                    <td>R$ ${c.preco.toFixed(2)}</td>
+                    <td>${c.vendas_hoje}</td>
+                    <td>R$ ${sub.toFixed(2)}</td>
+                </tr>`;
+            }
+        });
+
+        if(db.v_avulsa_a_q > 0) {
+            temAtacado = true;
+            corpoAtacado.innerHTML += `<tr style="font-style:italic;">
+                <td>Atacado Avulso</td>
+                <td>Vários</td>
+                <td>-</td>
+                <td>${db.v_avulsa_a_q}</td>
+                <td>R$ ${db.v_avulsa_a_r.toFixed(2)}</td>
+            </tr>`;
+        }
+
+        document.getElementById('pdf-atacado-container').style.display = temAtacado ? 'block' : 'none';
+        document.getElementById('pdf-total-geral').innerText = `R$ ${totalGeral.toFixed(2)}`;
+        
+        const obsContainer = document.getElementById('pdf-obs-container');
+        if(db.obs) {
+            obsContainer.style.display = 'block';
+            document.getElementById('pdf-obs').innerText = db.obs;
+        } else {
+            obsContainer.style.display = 'none';
+        }
+
+        window.print();
+    }
+</script>
+</body>
+</html>
