@@ -2,15 +2,15 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão v25</title>
+    <title>Água do Amigo - Gestão v26</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #f0f2f5; color: #333; }
         .container { max-width: 550px; margin: auto; background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: #007bff; font-size: 22px; margin-bottom: 15px; }
         
-        .abas { display: flex; gap: 4px; background: #eee; padding: 5px; border-radius: 10px; margin-bottom: 20px; }
-        .aba { flex: 1; padding: 12px 2px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; font-size: 11px; color: #555; }
+        .abas { display: flex; gap: 4px; background: #eee; padding: 5px; border-radius: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .aba { flex: 1; min-width: 70px; padding: 12px 2px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; font-size: 11px; color: #555; }
         .aba.active { background: #007bff; color: #fff; }
 
         .secao { display: none; }
@@ -43,6 +43,24 @@
         .total-box { background: #1c1e21; color: #fff; padding: 20px; border-radius: 12px; text-align: center; margin-top: 15px; }
         .valor-total { display: block; font-size: 32px; color: #44ff7e; font-weight: bold; }
 
+        /* Estilo da Notificação Flutuante */
+        #notificacao {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-50px);
+            background: #28a745; color: white; padding: 12px 25px; border-radius: 30px;
+            font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 9999;
+            opacity: 0; transition: all 0.3s ease; pointer-events: none; font-size: 14px;
+        }
+        #notificacao.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* Estilos do Histórico */
+        .item-historico { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }
+        .item-historico:last-child { border-bottom: none; }
+        .hist-hora { color: #888; font-size: 12px; font-variant-numeric: tabular-nums; }
+        .hist-tag { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; color: #fff; }
+        .tag-balcao { background: #007bff; }
+        .tag-entrega { background: #17a2b8; }
+        .tag-atacado { background: #fd7e14; }
+
         /* Estilos para o PDF/Impressão */
         #relatorio-area { display: none; }
         @media print {
@@ -58,6 +76,8 @@
 </head>
 <body>
 
+<div id="notificacao">Venda realizada! 🎉</div>
+
 <div class="container">
     <h1>💧 Água do Amigo</h1>
 
@@ -66,6 +86,7 @@
         <div class="aba" onclick="guia('atacado', this)">ATACADO</div>
         <div class="aba" onclick="guia('entrega', this)">ENTREGA</div>
         <div class="aba" onclick="guia('estoque', this)">ESTOQUE</div>
+        <div class="aba" onclick="guia('historico', this)">📜 HISTÓRICO</div>
         <div class="aba" onclick="guia('obs', this)" style="background: #fff3cd; color: #856404;">📝 OBS</div>
     </div>
 
@@ -122,6 +143,13 @@
 
     <div id="estoque" class="secao">
         <div id="lista_estoque"></div>
+    </div>
+
+    <div id="historico" class="secao">
+        <div class="caixa-form" style="background: #fff; border-color: #eee;">
+            <strong>📋 Registro de Vendas Recentes:</strong>
+            <div id="lista_historico" style="margin-top: 10px; max-height: 400px; overflow-y: auto;"></div>
+        </div>
     </div>
 
     <div id="obs" class="secao">
@@ -184,14 +212,43 @@
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('AGUA_V21')) || { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0 };
+    // Recupera do localStorage mantendo a compatibilidade e inserindo a chave 'historico' se não existir
+    let db = JSON.parse(localStorage.getItem('AGUA_V21')) || { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, historico: [] };
 
     // Travas de segurança para atualizações de banco de dados antigos
     if (db.obs === undefined) db.obs = "";
     if (db.v_avulsa_a_q === undefined) db.v_avulsa_a_q = 0;
     if (db.v_avulsa_a_r === undefined) db.v_avulsa_a_r = 0;
+    if (db.historico === undefined) db.historico = [];
     db.produtos.forEach(p => { if(p.estoque_inicial === undefined) p.estoque_inicial = p.qtd; });
     db.atacado.forEach(c => { if(c.vendas_hoje === undefined) c.vendas_hoje = 0; });
+
+    // Função para disparar a notificação visual na tela
+    function dispararNotificacao(mensagem) {
+        const notif = document.getElementById('notificacao');
+        notif.innerText = mensagem;
+        notif.classList.add('show');
+        setTimeout(() => {
+            notif.classList.remove('show');
+        }, 3000);
+    }
+
+    // Função auxiliar para capturar o horário atual formate HH:MM
+    function obterHorarioAtual() {
+        const agora = new Date();
+        return agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Função para registrar os itens na lista de histórico
+    function registrarHistorico(produto, tipo, qtd, valorTotal) {
+        db.historico.unshift({ // unshift insere no início para mostrar as mais recentes primeiro
+            hora: obterHorarioAtual(),
+            produto: produto,
+            tipo: tipo,
+            qtd: qtd,
+            total: valorTotal
+        });
+    }
 
     function guia(id, el) {
         document.querySelectorAll('.secao').forEach(s => s.classList.remove('active'));
@@ -203,12 +260,12 @@
 
     function renderizar() {
         localStorage.setItem('AGUA_V21', JSON.stringify(db));
-        const lLoja = document.getElementById('lista_loja'), lAta = document.getElementById('lista_atacado'), lEnt = document.getElementById('lista_entrega'), lEst = document.getElementById('lista_estoque');
+        const lLoja = document.getElementById('lista_loja'), lAta = document.getElementById('lista_atacado'), lEnt = document.getElementById('lista_entrega'), lEst = document.getElementById('lista_estoque'), lHist = document.getElementById('lista_historico');
         const sAC = document.getElementById('a_p_idx'), sEC = document.getElementById('e_p_idx'), sAA = document.getElementById('avulso_a_p'), sEA = document.getElementById('avulso_e_p');
         const bA = document.getElementById('busca_atacado').value.toLowerCase();
         const bE = document.getElementById('busca_entrega').value.toLowerCase();
 
-        lLoja.innerHTML = lAta.innerHTML = lEnt.innerHTML = lEst.innerHTML = '';
+        lLoja.innerHTML = lAta.innerHTML = lEnt.innerHTML = lEst.innerHTML = lHist.innerHTML = '';
         sAC.innerHTML = sEC.innerHTML = sAA.innerHTML = sEA.innerHTML = '<option value="">Escolha o Produto...</option>';
         
         let totalFaturamento = 0;
@@ -274,6 +331,26 @@
                 </div>`;
             }
         });
+
+        // Renderiza a lista visual do histórico na nova aba
+        if(db.historico.length === 0) {
+            lHist.innerHTML = '<p style="text-align:center; color:#888; font-size:13px; margin: 20px 0;">Nenhuma venda realizada hoje.</p>';
+        } else {
+            db.historico.forEach(h => {
+                let tagClasse = h.tipo === 'Balcão' ? 'tag-balcao' : (h.tipo === 'Entrega' ? 'tag-entrega' : 'tag-atacado');
+                lHist.innerHTML += `
+                    <div class="item-historico">
+                        <div>
+                            <span class="hist-tag ${tagClasse}">${h.tipo.toUpperCase()}</span>
+                            <span style="margin-left:5px"><b>${h.qtd}x</b> ${h.produto}</span>
+                        </div>
+                        <div style="text-align:right">
+                            <span style="font-weight:bold; color:#28a745;">R$ ${h.total.toFixed(2)}</span><br>
+                            <span class="hist-hora">🕒 ${h.hora}</span>
+                        </div>
+                    </div>`;
+            });
+        }
         
         document.getElementById('campo_obs').value = db.obs || '';
         document.getElementById('faturamento_hoje').innerText = "R$ " + totalFaturamento.toFixed(2);
@@ -329,10 +406,38 @@
     }
     function excluirEntrega(i) { if(confirm("Excluir este cliente de entrega?")) { db.entrega.splice(i, 1); renderizar(); } }
 
-    /* ---- Funções de Vendas ---- */
-    function vendaL(i) { if(db.produtos[i].qtd > 0) { db.produtos[i].v_l++; db.produtos[i].qtd--; db.produtos[i].vazios++; renderizar(); } }
+    /* ---- Funções de Vendas (Atualizadas com Histórico e Notificação) ---- */
+    function vendaL(i) { 
+        if(db.produtos[i].qtd > 0) { 
+            db.produtos[i].v_l++; 
+            db.produtos[i].qtd--; 
+            db.produtos[i].vazios++; 
+            
+            // Registra histórico e envia a notificação
+            registrarHistorico(db.produtos[i].nome, 'Balcão', 1, db.produtos[i].pL);
+            dispararNotificacao(`🛒 Balcão: 1x ${db.produtos[i].nome} vendida!`);
+            
+            renderizar(); 
+        } else {
+            dispararNotificacao("⚠️ Sem estoque para realizar a venda!");
+        }
+    }
     
-    function vendaE(i) { const p = db.produtos[db.entrega[i].pIdx]; if(p.qtd > 0) { p.v_e++; p.qtd--; p.vazios++; renderizar(); } }
+    function vendaE(i) { 
+        const p = db.produtos[db.entrega[i].pIdx]; 
+        if(p.qtd > 0) { 
+            p.v_e++; 
+            p.qtd--; 
+            p.vazios++; 
+            
+            registrarHistorico(p.nome, 'Entrega', 1, p.pE);
+            dispararNotificacao(`🚚 Entrega: Saída de ${p.nome} registrada!`);
+            
+            renderizar(); 
+        } else {
+            dispararNotificacao("⚠️ Sem estoque para realizar a venda!");
+        }
+    }
     
     function vendaA(i) { 
         const q = parseInt(document.getElementById(`q_a_${i}`).value); 
@@ -340,23 +445,47 @@
         if(q > 0 && p.qtd >= q) { 
             db.atacado[i].vendas_hoje = (db.atacado[i].vendas_hoje || 0) + q;
             p.v_a_r += (q * db.atacado[i].preco); p.v_a_q += q; p.qtd -= q; p.vazios += q; 
+            
+            registrarHistorico(`${db.atacado[i].nome} (${p.nome})`, 'Atacado', q, (q * db.atacado[i].preco));
+            dispararNotificacao(`🏢 Atacado: ${q}x para ${db.atacado[i].nome}!`);
+            
+            document.getElementById(`q_a_${i}`).value = ''; // limpa input
             renderizar(); 
-        } 
+        } else {
+            dispararNotificacao("⚠️ Quantidade inválida ou estoque insuficiente!");
+        }
     }
     
     function vendaAvulsa(tipo) {
         const pIdx = document.getElementById(tipo === 'A' ? 'avulso_a_p' : 'avulso_e_p').value; if(pIdx === "") return;
         const p = db.produtos[pIdx];
-        if(tipo==='E') { if(p.qtd>0) { p.v_e++; p.qtd--; p.vazios++; renderizar(); } }
+        if(tipo==='E') { 
+            if(p.qtd>0) { 
+                p.v_e++; p.qtd--; p.vazios++; 
+                registrarHistorico(`${p.nome} (Avulso)`, 'Entrega', 1, p.pE);
+                dispararNotificacao(`🚚 Entrega Avulsa: Saída de 1x ${p.nome}!`);
+                renderizar(); 
+            } else {
+                dispararNotificacao("⚠️ Sem estoque!");
+            }
+        }
         else { 
             const q = parseInt(document.getElementById('avulso_a_q').value) || 0; 
             if(q>0 && p.qtd>=q) { 
                 const pr = parseFloat(prompt("Preço Unitário?", p.pL)); 
+                if(isNaN(pr)) return;
                 db.v_avulsa_a_q = (db.v_avulsa_a_q || 0) + q;
                 db.v_avulsa_a_r = (db.v_avulsa_a_r || 0) + (q * pr);
                 p.v_a_r+=(q*pr); p.v_a_q+=q; p.qtd-=q; p.vazios+=q; 
+                
+                registrarHistorico(`${p.nome} (Atacado Avulso)`, 'Atacado', q, (q * pr));
+                dispararNotificacao(`⚡ Atacado Avulso: ${q}x ${p.nome}!`);
+                
+                document.getElementById('avulso_a_q').value = '';
                 renderizar(); 
-            } 
+            } else {
+                dispararNotificacao("⚠️ Qtd inválida ou estoque insuficiente!");
+            }
         }
     }
 
@@ -372,12 +501,13 @@
     function mudarVazio(i, v) { db.produtos[i].vazios = Math.max(0, (db.produtos[i].vazios || 0) + v); renderizar(); }
     
     function zerarVendas() { 
-        if(confirm("Deseja zerar as vendas do dia? O estoque ATUAL virará o INICIAL, as OBSERVAÇÕES e o RELATÓRIO DE CLIENTES serão resetados.")) { 
+        if(confirm("Deseja zerar as vendas do dia? O estoque ATUAL virará o INICIAL, as OBSERVAÇÕES, o HISTÓRICO e o RELATÓRIO DE CLIENTES serão resetados.")) { 
             db.produtos.forEach(p => { p.estoque_inicial = p.qtd; p.v_l=0; p.v_e=0; p.v_a_r=0; p.v_a_q=0; p.vazios=0; }); 
             db.atacado.forEach(c => { c.vendas_hoje = 0; });
             db.v_avulsa_a_q = 0;
             db.v_avulsa_a_r = 0;
             db.obs = ''; 
+            db.historico = []; // Limpa o histórico para o novo dia
             renderizar(); 
         } 
     }
