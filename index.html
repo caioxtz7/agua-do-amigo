@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão v34</title>
+    <title>Água do Amigo - Gestão v35</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         /* --- CORES PADRÃO (MODO CLARO) --- */
@@ -239,6 +239,14 @@
     </div>
 </div>
 
+<div id="comanda-flutuante" style="display:none; position:fixed; bottom:20px; right:20px; background:var(--bg-container); border:2px solid #007bff; padding:15px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.3); z-index:1000; width: 280px;">
+    <h3 style="margin-top:0; color:#007bff; text-align:center; font-size:16px;">🛒 Comanda Atual</h3>
+    <div id="itens-comanda" style="margin-bottom:10px; font-size:13px; max-height:150px; overflow-y:auto; padding-right:5px;"></div>
+    <div style="font-weight:bold; margin-bottom:10px; text-align:right; font-size:16px; color:#28a745;">Total: R$ <span id="total-comanda">0.00</span></div>
+    <button onclick="abrirModalComanda()" style="background:#28a745; color:white; width:100%; padding:12px; border-radius:8px; margin-bottom:5px; font-weight:bold;">Finalizar Comanda</button>
+    <button onclick="limparComanda()" style="background:#dc3545; color:white; width:100%; padding:8px; border-radius:8px; font-size:12px; font-weight:bold;">Cancelar Tudo</button>
+</div>
+
 <div id="modal-pagamento" class="modal-overlay">
     <div class="modal-content">
         <h3 style="margin-top:0; color:#007bff; text-align: center;">Finalizar Pedido</h3>
@@ -326,13 +334,8 @@
         <thead>
             <tr><th style="text-align:left;">Produto/Item</th><th style="text-align:center;">Qtd</th><th style="text-align:right;">Subtotal</th></tr>
         </thead>
-        <tbody>
-            <tr>
-                <td id="cupom-item-nome"></td>
-                <td id="cupom-item-qtd" style="text-align:center;"></td>
-                <td id="cupom-item-total" style="text-align:right;"></td>
-            </tr>
-        </tbody>
+        <tbody id="cupom-itens-corpo">
+            </tbody>
     </table>
     <div style="border-bottom:1px dashed #000; margin:8px 0;"></div>
     <div style="font-size:12px; line-height:1.4; text-align:right; color:#000;">
@@ -348,7 +351,8 @@
 
 <script>
     let db;
-    let vendaAtiva = null; // Guarda o contexto da venda atual aberta no painel modal
+    let vendaAtiva = null; 
+    let comanda = []; // Guarda múltiplos itens temporariamente antes de finalizar a comanda
 
     try {
         db = JSON.parse(localStorage.getItem('AGUA_V24'));
@@ -392,7 +396,7 @@
     function dispararNotificacao(mensagem) {
         const notif = document.getElementById('notificacao');
         if(notif) {
-            notif.innerText = mensagem;
+            notif.innerText = message = mensagem;
             notif.classList.add('show');
             setTimeout(() => { notif.classList.remove('show'); }, 3000);
         }
@@ -403,7 +407,75 @@
         return `${agora.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})} - ${agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`;
     }
 
-    // --- INTERFACE DO MODAL DE PAGAMENTO ---
+    /* --- LÓGICA DA COMANDA (CARRINHO) --- */
+    function adicionarAComanda(item) {
+        // Verifica se o item já existe na comanda com as mesmas características para agrupar
+        let itemExistente = comanda.find(c => c.pIdx === item.pIdx && c.tipo === item.tipo && c.ref === item.ref && c.clienteNome === item.clienteNome);
+        
+        if (itemExistente) {
+            itemExistente.qtd += item.qtd;
+            itemExistente.total += item.total;
+        } else {
+            comanda.push(item);
+        }
+        
+        atualizarComandaUI();
+        dispararNotificacao(`➕ ${item.produtoNome.split(' - ')[0]} adicionado à comanda!`);
+    }
+
+    function atualizarComandaUI() {
+        const div = document.getElementById('comanda-flutuante');
+        const lista = document.getElementById('itens-comanda');
+        const totalEl = document.getElementById('total-comanda');
+        
+        if(comanda.length === 0) {
+            div.style.display = 'none';
+            return;
+        }
+        
+        div.style.display = 'block';
+        lista.innerHTML = '';
+        let totalGeral = 0;
+        
+        comanda.forEach((c, idx) => {
+            totalGeral += c.total;
+            lista.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-card); padding:6px 0;">
+                <span><b>${c.qtd}x</b> ${c.produtoNome.split(' - ')[0]} (${c.tipo})</span>
+                <span>R$ ${c.total.toFixed(2)} <button onclick="removerDaComanda(${idx})" style="background:none; color:#dc3545; font-weight:bold; font-size:14px; padding:0 5px;">X</button></span>
+            </div>`;
+        });
+        totalEl.innerText = totalGeral.toFixed(2);
+    }
+
+    function removerDaComanda(idx) {
+        comanda.splice(idx, 1);
+        atualizarComandaUI();
+    }
+
+    function limparComanda() {
+        comanda = [];
+        atualizarComandaUI();
+    }
+
+    function abrirModalComanda() {
+        if(comanda.length === 0) return;
+        
+        let totalDaComanda = comanda.reduce((acc, item) => acc + item.total, 0);
+        
+        // Define a venda ativa estruturada como uma comanda multi-itens
+        vendaAtiva = { total: totalDaComanda, isComanda: true };
+        
+        document.getElementById('modal-total-texto').innerText = `Total da Comanda: R$ ${totalDaComanda.toFixed(2)}`;
+        document.getElementById('modal-forma-pag').value = 'Dinheiro';
+        document.getElementById('modal-v-dinheiro').value = totalDaComanda.toFixed(2);
+        document.getElementById('modal-v-outro').value = '0.00';
+        document.getElementById('modal-v-recebido').value = '';
+        document.getElementById('modal-troco-texto').innerText = 'R$ 0,00';
+        
+        ajustarCamposPagamento();
+        document.getElementById('modal-pagamento').style.display = 'flex';
+    }
+
     function abrirModalPagamento(contexto) {
         vendaAtiva = contexto;
         document.getElementById('modal-total-texto').innerText = `Total do Pedido: R$ ${contexto.total.toFixed(2)}`;
@@ -445,11 +517,9 @@
             divOutro.style.display = 'block';
             divRecebido.style.display = 'block';
             
-            // Sugere divisão meio a meio inicial
             document.getElementById('modal-v-dinheiro').value = (vendaAtiva.total / 2).toFixed(2);
             document.getElementById('modal-v-outro').value = (vendaAtiva.total / 2).toFixed(2);
             
-            // Vincula os campos de input para auto-ajuste recíproco
             document.getElementById('modal-v-dinheiro').oninput = function() {
                 let vDin = parseFloat(this.value) || 0;
                 if(vDin > vendaAtiva.total) vDin = vendaAtiva.total;
@@ -488,6 +558,7 @@
 
     function confirmarVendaModal() {
         if (!vendaAtiva) return;
+        if (vendaAtiva.isComanda && comanda.length === 0) return;
         
         const forma = document.getElementById('modal-forma-pag').value;
         const vDinheiro = parseFloat(document.getElementById('modal-v-dinheiro').value) || 0;
@@ -501,65 +572,73 @@
         }
 
         const pago = (forma !== 'Pendente');
-        const prod = db.produtos[vendaAtiva.pIdx];
-
-        // Atualiza Estoque
-        prod.qtd -= vendaAtiva.qtd;
-        prod.vazios = (prod.vazios || 0) + vendaAtiva.qtd;
+        const horaVenda = obterHorarioAtual();
         
-        // Atualiza Faturamento da aba conforme tipo
-        if (vendaAtiva.tipo === 'Balcão') {
-            prod.v_l += vendaAtiva.qtd;
-        } else if (vendaAtiva.tipo === 'Entrega') {
-            if (pago) prod.v_e += vendaAtiva.qtd;
-        } else if (vendaAtiva.tipo === 'Atacado') {
-            prod.v_a_q = (prod.v_a_q || 0) + vendaAtiva.qtd;
-            if (pago) prod.v_a_r = (prod.v_a_r || 0) + vendaAtiva.total;
-            if (vendaAtiva.ref !== null && db.atacado[vendaAtiva.ref]) {
-                db.atacado[vendaAtiva.ref].vendas_hoje = (db.atacado[vendaAtiva.ref].vendas_hoje || 0) + vendaAtiva.qtd;
+        // Define o lote de itens a processar (múltiplos itens se for comanda, ou vetor de 1 se for venda direta de entrega)
+        let itensParaProcessar = vendaAtiva.isComanda ? comanda : [vendaAtiva];
+
+        itensParaProcessar.forEach(item => {
+            const prod = db.produtos[item.pIdx];
+
+            prod.qtd -= item.qtd;
+            prod.vazios = (prod.vazios || 0) + item.qtd;
+            
+            if (item.tipo === 'Balcão') {
+                prod.v_l += item.qtd;
+            } else if (item.tipo === 'Entrega') {
+                if (pago) prod.v_e += item.qtd;
+            } else if (item.tipo === 'Atacado') {
+                prod.v_a_q = (prod.v_a_q || 0) + item.qtd;
+                if (pago) prod.v_a_r = (prod.v_a_r || 0) + item.total;
+                if (item.ref !== null && db.atacado[item.ref]) {
+                    db.atacado[item.ref].vendas_hoje = (db.atacado[item.ref].vendas_hoje || 0) + item.qtd;
+                }
             }
-        }
 
-        // Insere no histórico de vendas com os dados da forma de pagamento
-        db.historico.unshift({ 
-            hora: obterHorarioAtual(), 
-            produto: vendaAtiva.produtoNome, 
-            tipo: vendaAtiva.tipo, 
-            qtd: vendaAtiva.qtd, 
-            total: vendaAtiva.total,
-            ref: vendaAtiva.ref,
-            pago: pago,
-            endereco: vendaAtiva.endereco,
-            pIdx: vendaAtiva.pIdx,
-            clienteNome: vendaAtiva.clienteNome,
-            formaPagamento: forma,
-            vDinheiro: vDinheiro,
-            vOutro: vOutro,
-            troco: troco
+            // Cada item vai individualmente para o histórico para controle preciso de estatísticas e planilha
+            db.historico.unshift({ 
+                hora: horaVenda, 
+                produto: item.produtoNome, 
+                tipo: item.tipo, 
+                qtd: item.qtd, 
+                total: item.total,
+                ref: item.ref,
+                pago: pago,
+                endereco: item.endereco,
+                pIdx: item.pIdx,
+                clienteNome: item.clienteNome,
+                formaPagamento: forma,
+                vDinheiro: vendaAtiva.isComanda ? (vDinheiro * (item.total / vendaAtiva.total)) : vDinheiro, // Proporcional se for comanda
+                vOutro: vendaAtiva.isComanda ? (vOutro * (item.total / vendaAtiva.total)) : vOutro,
+                troco: vendaAtiva.isComanda ? (troco * (item.total / vendaAtiva.total)) : troco
+            });
+
+            if (item.limparInputId) {
+                const inp = document.getElementById(item.limparInputId);
+                if (inp) inp.value = '';
+            }
         });
-
-        if (vendaAtiva.limparInputId) {
-            const inp = document.getElementById(vendaAtiva.limparInputId);
-            if (inp) inp.value = '';
-        }
 
         dispararNotificacao("Venda registrada com sucesso! 🎉");
 
-        // Dispara a impressão automática da Notinha
+        // Imprime o cupom contendo todos os itens processados nesta transação
         imprimirCupomAutomatico({
-            hora: obterHorarioAtual(),
-            produto: vendaAtiva.produtoNome,
-            tipo: vendaAtiva.tipo,
-            qtd: vendaAtiva.qtd,
+            hora: horaVenda,
+            tipo: vendaAtiva.isComanda ? 'Múltiplos (Comanda)' : vendaAtiva.tipo,
+            clienteNome: itensParaProcessar[0].clienteNome || "Consumidor",
+            endereco: itensParaProcessar[0].endereco || "",
+            itens: itensParaProcessar,
             total: vendaAtiva.total,
             formaPagamento: forma,
             vDinheiro: vDinheiro,
             vOutro: vOutro,
             troco: troco,
-            clienteNome: vendaAtiva.clienteNome,
-            endereco: vendaAtiva.endereco,
             vRecebido: vRecebido
         });
+
+        if (vendaAtiva.isComanda) {
+            limparComanda();
+        }
 
         fecharModalPagamento();
         renderizar();
@@ -577,9 +656,17 @@
             document.getElementById('cupom-end-linha').style.display = 'none';
         }
         
-        document.getElementById('cupom-item-nome').innerText = dados.produto.split(' - ')[0];
-        document.getElementById('cupom-item-qtd').innerText = dados.qtd;
-        document.getElementById('cupom-item-total').innerText = `R$ ${dados.total.toFixed(2)}`;
+        const corpoItens = document.getElementById('cupom-itens-corpo');
+        corpoItens.innerHTML = '';
+        
+        dados.itens.forEach(item => {
+            corpoItens.innerHTML += `<tr>
+                <td>${item.produtoNome.split(' - ')[0]}</td>
+                <td style="text-align:center;">${item.qtd}</td>
+                <td style="text-align:right;">R$ ${item.total.toFixed(2)}</td>
+            </tr>`;
+        });
+        
         document.getElementById('cupom-pagto').innerText = dados.formaPagamento;
         
         if (dados.formaPagamento === 'Mesclado') {
@@ -596,46 +683,64 @@
         document.getElementById('cupom-recebido').innerText = entregado.toFixed(2);
         document.getElementById('cupom-troco').innerText = dados.troco.toFixed(2);
         
-        // Ativa classe e manda para a impressora térmica
         document.body.classList.add('print-mode-cupom');
         window.print();
         document.body.classList.remove('print-mode-cupom');
     }
 
-    // --- FUNÇÕES DE ACIONAMENTO DAS VENDAS RECONFIGURADAS PARA PASSAR PELO MODAL ---
     function vendaL(i) { 
-        if(db.produtos[i].qtd > 0) { 
-            abrirModalPagamento({
-                tipo: 'Balcão', qtd: 1, total: db.produtos[i].pL,
-                produtoNome: db.produtos[i].nome, pIdx: i, ref: null,
+        const p = db.produtos[i];
+        if(!p) return;
+        
+        // Verifica quantidade já adicionada na comanda pendente
+        let qtdNaComanda = comanda.filter(c => c.pIdx === i && c.tipo === 'Balcão').reduce((acc, c) => acc + c.qtd, 0);
+
+        if(p.qtd > qtdNaComanda) { 
+            adicionarAComanda({
+                tipo: 'Balcão', qtd: 1, total: p.pL,
+                produtoNome: p.nome, pIdx: i, ref: null,
                 endereco: "", clienteNome: "Balcão"
             });
-        } else { dispararNotificacao("⚠️ Sem estoque!"); }
+        } else { dispararNotificacao(`⚠️ Sem estoque suficiente para ${p.nome}!`); }
     }
     
     function vendaE(i) { 
         const pIdx = db.entrega[i].pIdx; const p = db.produtos[pIdx];
+        if(!p) return;
         if(p.qtd > 0) { 
+            // As entregas continuam individuais imediatas devido à saída para entrega de motoboy
             abrirModalPagamento({
                 tipo: 'Entrega', qtd: 1, total: p.pE,
                 produtoNome: `${p.nome} - Cliente: ${db.entrega[i].nome}`,
                 pIdx: pIdx, ref: null, endereco: db.entrega[i].end, clienteNome: db.entrega[i].nome
             });
-        } else { dispararNotificacao("⚠️ Sem estoque!"); }
+        } else { dispararNotificacao(`⚠️ Sem estoque para ${p.nome}! Abasteça na aba ESTOQUE.`); }
     }
     
     function vendaA(i) { 
-        const q = parseInt(document.getElementById(`q_a_${i}`).value);
+        const inputQtd = document.getElementById(`q_a_${i}`);
+        if(!inputQtd) return;
+        const q = parseInt(inputQtd.value);
+        if(!q || q <= 0) {
+            dispararNotificacao("⚠️ Defina a quantidade antes de vender!");
+            return;
+        }
         const pIdx = db.atacado[i].pIdx; const p = db.produtos[pIdx]; 
-        if(!q || q <= 0) return;
-        if(p.qtd >= q) { 
-            abrirModalPagamento({
+        if(!p) {
+            dispararNotificacao("⚠️ Produto vinculado não encontrado!");
+            return;
+        }
+        
+        let qtdNaComanda = comanda.filter(c => c.pIdx === pIdx).reduce((acc, c) => acc + c.qtd, 0);
+
+        if(p.qtd >= (q + qtdNaComanda)) { 
+            adicionarAComanda({
                 tipo: 'Atacado', qtd: q, total: q * db.atacado[i].preco,
                 produtoNome: `${db.atacado[i].nome} (${p.nome})`,
                 pIdx: pIdx, ref: i, endereco: "", clienteNome: db.atacado[i].nome,
                 limparInputId: `q_a_${i}`
             });
-        } else { dispararNotificacao("⚠️ Sem estoque!"); }
+        } else { dispararNotificacao(`⚠️ Estoque insuficiente! Estoque atual: ${p.qtd}`); }
     }
     
     function vendaAvulsa(tipo) {
@@ -645,25 +750,27 @@
         const q = parseInt(document.getElementById(tipo === 'A' ? 'avulso_a_q' : 'avulso_e_q').value) || 0;
         if(q <= 0) return dispararNotificacao("Qtd inválida");
         
-        if(p.qtd >= q) {
+        let qtdNaComanda = comanda.filter(c => c.pIdx === parseInt(pIdx)).reduce((acc, c) => acc + c.qtd, 0);
+
+        if(p.qtd >= (q + qtdNaComanda)) {
             if(tipo === 'E') {
                 let endAvulso = prompt("Digite o endereço para o motoboy (ou deixe em branco):", "");
                 abrirModalPagamento({
                     tipo: 'Entrega', qtd: q, total: q * p.pE,
                     produtoNome: `${p.nome} (Entrega Avulsa)`,
-                    pIdx: pIdx, ref: null, endereco: endAvulso, clienteNome: "Entrega Avulsa",
+                    pIdx: parseInt(pIdx), ref: null, endereco: endAvulso, clienteNome: "Entrega Avulsa",
                     limparInputId: 'avulso_e_q'
                 });
             } else {
-                const pr = parseFloat(prompt("Preço Unitário?", p.pL)) || p.pL;
-                abrirModalPagamento({
+                const pr = parseFloat(prompt("Preço Unitário para Atacado?", p.pL)) || p.pL;
+                adicionarAComanda({
                     tipo: 'Atacado', qtd: q, total: q * pr,
                     produtoNome: `${p.nome} (Atacado Avulso)`,
-                    pIdx: pIdx, ref: null, endereco: "", clienteNome: "Atacado Avulso",
+                    pIdx: parseInt(pIdx), ref: null, endereco: "", clienteNome: "Atacado Avulso",
                     limparInputId: 'avulso_a_q'
                 });
             }
-        } else { dispararNotificacao("⚠️ Sem estoque!"); }
+        } else { dispararNotificacao("⚠️ Sem estoque suficiente!"); }
     }
 
     function darBaixaPagamento(index) {
@@ -746,7 +853,7 @@
         input.onchange = e => {
             const leitor = new FileReader();
             leitor.onload = ev => {
-                try { db = JSON.parse(ev.target.result); renderizar(); dispararNotificacao("📂 Dados importados!"); } catch(err) { alert("Arquivo inválido."); }
+                try { db = JSON.parse(ev.target.result); renderizar(); limparComanda(); dispararNotificacao("📂 Dados importados!"); } catch(err) { alert("Arquivo inválido."); }
             };
             leitor.readAsText(e.target.files[0]);
         };
@@ -768,6 +875,14 @@
         
         let totalFaturamentoGeral = 0;
         db.produtos.forEach((p, i) => {
+            if (p.v_l === undefined) p.v_l = 0;
+            if (p.v_e === undefined) p.v_e = 0;
+            if (p.v_a_q === undefined) p.v_a_q = 0;
+            if (p.v_a_r === undefined) p.v_a_r = 0;
+            if (p.vazios === undefined) p.vazios = 0;
+            if (p.qtd === undefined) p.qtd = 0;
+            if (p.estoque_inicial === undefined) p.estoque_inicial = 0;
+
             totalFaturamentoGeral += (p.v_l * (p.pL || 0)) + (p.v_e * (p.pE || 0)) + (p.v_a_r || 0);
             const opt = `<option value="${i}">${p.nome}</option>`;
             sAC.innerHTML += opt; sEC.innerHTML += opt; sAA.innerHTML += opt; sEA.innerHTML += opt;
@@ -775,7 +890,7 @@
             lLoja.innerHTML += `<div class="card">
                 <div class="flex-row">
                     <div><b>${p.nome}</b><br><small style="color:#007bff">Estoque: ${p.qtd}</small></div>
-                    <button style="background:#007bff; color:white; padding:10px 15px;" onclick="vendaL(${i})">VENDER BALCÃO</button>
+                    <button style="background:#007bff; color:white; padding:10px 15px;" onclick="vendaL(${i})">+ COMANDA</button>
                 </div>
                 <div class="info-vendas">
                     <span>🛒 Balcão: <b>${p.v_l}</b></span> | <span>🚚 Entrega: <b>${p.v_e}</b></span> | <span>🏢 Atacado: <b>${p.v_a_q}</b></span>
@@ -804,7 +919,7 @@
                 lAta.innerHTML += `<div class="card">
                     <div class="flex-row">
                         <div><b>${c.nome}</b><br><small>${db.produtos[c.pIdx]?.nome || 'Produto'} - R$ ${c.preco.toFixed(2)}</small></div>
-                        <div style="display:flex; gap:5px"><input type="number" id="q_a_${i}" placeholder="Qtd" style="margin:0; width:60px; background:var(--bg-container)"><button style="background:#fd7e14; color:white; padding:10px" onclick="vendaA(${i})">VENDER</button></div>
+                        <div style="display:flex; gap:5px"><input type="number" id="q_a_${i}" placeholder="Qtd" style="margin:0; width:60px; background:var(--bg-container)"><button style="background:#fd7e14; color:white; padding:10px" onclick="vendaA(${i})">+ COMANDA</button></div>
                     </div>
                     <div class="card-footer">
                         <button class="btn-acao edit" onclick="editarAtacado(${i})">✏️ Editar</button>
@@ -873,12 +988,14 @@
             document.getElementById('caixa_inicial_input').value = db.caixaInicial || '';
         }
         
-        // Exibe a somatória completa do Caixa Real do Dia (Inicial + Vendas)
         let totalComTroco = totalFaturamentoGeral + (db.caixaInicial || 0);
         if(document.getElementById('faturamento_hoje')) document.getElementById('faturamento_hoje').innerText = "R$ " + totalComTroco.toFixed(2);
         if(document.getElementById('detalhe_caixa_inicial')) {
             document.getElementById('detalhe_caixa_inicial').innerText = `Troco Inicial: R$ ${(db.caixaInicial || 0).toFixed(2)} | Vendas: R$ ${totalFaturamentoGeral.toFixed(2)}`;
         }
+        
+        // Mantém a interface da comanda flutuante alinhada
+        atualizarComandaUI();
     }
 
     function salvarObs() { db.obs = document.getElementById('campo_obs').value; localStorage.setItem('AGUA_V24', JSON.stringify(db)); }
@@ -918,7 +1035,8 @@
     function zerarVendas() {
         if(!confirm("Zerar as vendas do dia? Estoque atual, cadastros e o valor de abertura do caixa serão redefinidos.")) return;
         db.produtos.forEach(p => { p.estoque_inicial = p.qtd; p.v_l = 0; p.v_e = 0; p.v_a_q = 0; p.v_a_r = 0; p.vazios = 0; });
-        db.historico = []; db.obs = ""; db.caixaInicial = 0; renderizar();
+        if(db.atacado) { db.atacado.forEach(c => { c.vendas_hoje = 0; }); }
+        db.historico = []; db.obs = ""; db.caixaInicial = 0; limparComanda(); renderizar();
     }
 
     function gerarPDF() {
@@ -937,7 +1055,14 @@
         db.historico.forEach(h => {
             if(h.tipo === 'Atacado') {
                 let nomeCliente = h.clienteNome || "Atacado Avulso";
-                let nomeProd = h.produto.includes("(") ? h.produto.split("(")[1].replace(")", "") : h.produto;
+                let nomeProd = h.produto;
+                
+                if (h.produto.includes(" (Atacado Avulso)")) {
+                    nomeProd = h.produto.replace(" (Atacado Avulso)", "");
+                } else if (h.produto.includes("(")) {
+                    nomeProd = h.produto.split("(")[1].replace(")", "");
+                }
+                
                 let chave = `${nomeCliente}_${nomeProd}`;
 
                 if(!mapaAtacado[chave]) {
@@ -973,4 +1098,5 @@
     }
 </script>
 </body>
+</html>
 </html>
