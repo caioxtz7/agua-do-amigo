@@ -4,6 +4,26 @@
     <meta charset="UTF-8">
     <title>Água do Amigo - Gestão v36</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script>
+        // CHAVES DO SEU PROJETO (Substitua com os seus dados reais do Firebase)
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY_AQUI",
+            authDomain: "seu-projeto.firebaseapp.com",
+            projectId: "seu-projeto",
+            storageBucket: "seu-projeto.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234:web:abcd"
+        };
+        
+        // Inicialização do Banco de Dados na Nuvem
+        firebase.initializeApp(firebaseConfig);
+        const fs = firebase.firestore();
+        const docRef = fs.collection("gestao").doc("dados_agua");
+    </script>
+
     <style>
         /* --- CORES PADRÃO (MODO CLARO) --- */
         :root {
@@ -380,18 +400,32 @@
     let comanda = []; // Guarda múltiplos itens temporariamente antes de finalizar a comanda
     let dataVisualizacao = "atual"; // Controla qual dia está a ser exibido ("atual" ou uma data "DD-MM-AAAA")
 
-    try {
-        db = JSON.parse(localStorage.getItem('AGUA_V24'));
-        if (!db || !db.produtos || !db.atacado || !db.entrega) { throw new Error("Nova Versão"); }
-    } catch(e) {
-        db = { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, historico: [], temaEscuro: false, caixaInicial: 0, devedores: [], historicoDias: {} };
-    }
+    // OUVINTE EM TEMPO REAL DO FIREBASE FIRESTORE
+    docRef.onSnapshot((doc) => {
+        if (doc.exists) {
+            db = doc.data();
+        } else {
+            db = { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, historico: [], temaEscuro: false, caixaInicial: 0, devedores: [], historicoDias: {} };
+            salvarNoFirebase();
+        }
 
-    if (!db.historico) db.historico = [];
-    if (!db.devedores) db.devedores = [];
-    if (!db.historicoDias) db.historicoDias = {};
-    if (db.temaEscuro === undefined) db.temaEscuro = false;
-    if (db.caixaInicial === undefined) db.caixaInicial = 0;
+        if (!db.historico) db.historico = [];
+        if (!db.devedores) db.devedores = [];
+        if (!db.historicoDias) db.historicoDias = {};
+        if (db.temaEscuro === undefined) db.temaEscuro = false;
+        if (db.caixaInicial === undefined) db.caixaInicial = 0;
+
+        aplicarTema();
+        renderizar(true); // Passa true para renderizar apenas o visual sem re-enviar dados em loop
+    });
+
+    // FUNÇÃO QUE FAZ O BACKUP AUTOMÁTICO NA NUVEM
+    function salvarNoFirebase() {
+        if (!db || dataVisualizacao !== "atual") return;
+        docRef.set(db).catch((error) => {
+            console.error("Erro ao sincronizar com o Firebase: ", error);
+        });
+    }
 
     // Função interna de segurança para bloquear alterações em dados históricos passados
     function verificarLeitura() {
@@ -417,7 +451,7 @@
     function alternarTema() {
         db.temaEscuro = !db.temaEscuro;
         aplicarTema();
-        localStorage.setItem('AGUA_V24', JSON.stringify(db));
+        salvarNoFirebase();
     }
 
     function aplicarTema() {
@@ -434,7 +468,7 @@
     function dispararNotificacao(mensagem) {
         const notif = document.getElementById('notificacao');
         if(notif) {
-            notif.innerText = mensagem;
+            notif.innerText = message = mensagem;
             notif.classList.add('show');
             setTimeout(() => { notif.classList.remove('show'); }, 3000);
         }
@@ -448,7 +482,7 @@
     function selecionarData(valor) {
         dataVisualizacao = valor;
         limparComanda();
-        renderizar();
+        renderizar(true);
     }
 
     /* --- LÓGICA DA COMANDA (CARRINHO) --- */
@@ -868,7 +902,6 @@
     }
 
     function enviarZapCliente(index) {
-        // Envio de mensagens permitido mesmo em dados históricos
         let histLocal = dataVisualizacao === "atual" ? db.historico : (db.historicoDias[dataVisualizacao]?.historico || []);
         const h = histLocal[index]; if(!h) return;
         let msg = `*💧 Água do Amigo*\n\nOlá! Seu pedido foi registrado! 🎉\n\n📋 *Pedido:* ${h.qtd}x ${h.produto.split(' - ')[0]}\n▪️ *Valor:* R$ ${h.total.toFixed(2)}\n▪️ *Pagamento:* ${h.pago ? '✅ Pago ('+h.formaPagamento+')' : '⏳ Pagar na Entrega'}\n\nAgradecemos a preferência! 👍`;
@@ -887,7 +920,7 @@
         document.querySelectorAll('.secao').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.aba').forEach(a => a.classList.remove('active'));
         document.getElementById(id).classList.add('active'); el.classList.add('active');
-        renderizar();
+        renderizar(true);
     }
 
     function exportarDados() {
@@ -896,7 +929,7 @@
         dispararNotificacao("💾 Backup baixado!");
     }
 
-    document.addEventListener("DOMContentLoaded", () => { renderizar(); });
+    document.addEventListener("DOMContentLoaded", () => { /* Carregado pelo onSnapshot do Firebase */ });
     
     function importarDados() {
         const input = document.createElement("input"); input.type = "file"; input.accept = ".json";
@@ -907,7 +940,7 @@
                     db = JSON.parse(ev.target.result); 
                     if(!db.historicoDias) db.historicoDias = {};
                     dataVisualizacao = "atual";
-                    renderizar(); 
+                    salvarNoFirebase();
                     limparComanda(); 
                     dispararNotificacao("📂 Dados importados!"); 
                 } catch(err) { alert("Arquivo inválido."); }
@@ -917,8 +950,10 @@
         input.click();
     }
 
-    function renderizar() {
-        localStorage.setItem('AGUA_V24', JSON.stringify(db));
+    function renderizar(vindoDoFirebase = false) {
+        if (!vindoDoFirebase && dataVisualizacao === "atual") {
+            salvarNoFirebase();
+        }
         aplicarTema();
 
         // Determinar as fontes de dados com base no dia ativo ou passado
@@ -1132,7 +1167,7 @@
     function salvarObs() { 
         if (dataVisualizacao !== "atual") return;
         db.obs = document.getElementById('campo_obs').value; 
-        localStorage.setItem('AGUA_V24', JSON.stringify(db)); 
+        salvarNoFirebase(); 
     }
     
     function salvarDevedor() {
@@ -1275,7 +1310,6 @@
     }
 
     function gerarPDF() {
-        // Obter fonte correta dependendo do dia visualizado
         let IsLeitura = (dataVisualizacao !== "atual");
         let produtosFonte = IsLeitura ? (db.historicoDias[dataVisualizacao]?.produtos || []) : db.produtos;
         let historicoFonte = IsLeitura ? (db.historicoDias[dataVisualizacao]?.historico || []) : db.historico;
