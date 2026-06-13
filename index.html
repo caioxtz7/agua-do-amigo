@@ -1288,4 +1288,64 @@
         document.getElementById('data-relatorio').innerText = rotuloData;
         
         corpo.innerHTML = ''; corpoAtacado.innerHTML = '';
-        let totalGeral = 0
+        let totalGeral = 0;
+        
+        produtosFonte.forEach(p => {
+            let totalProd = (p.v_l * (p.pL || 0)) + (p.v_e * (p.pE || 0)) + (p.v_a_r || 0);
+            totalGeral += totalProd;
+            corpo.innerHTML += `<tr><td>${p.nome}</td><td>${p.estoque_inicial||0}</td><td>${p.v_l}</td><td>${p.v_e}</td><td>${p.v_a_q}</td><td>${p.qtd}</td><td>${p.vazios||0}</td><td>R$ ${totalProd.toFixed(2)}</td></tr>`;
+        });
+
+        let mapaAtacado = {};
+        historicoFonte.forEach(h => {
+            if(h.tipo === 'Atacado') {
+                let nomeCliente = h.clienteNome || "Atacado Avulso";
+                let nomeProd = h.produto;
+                
+                if (h.produto.includes(" (Atacado Avulso)")) {
+                    nomeProd = h.produto.replace(" (Atacado Avulso)", "");
+                } else if (h.produto.includes("(")) {
+                    nomeProd = h.produto.split("(")[1].replace(")", "");
+                }
+                
+                let chave = `${nomeCliente}_${nomeProd}`;
+
+                if(!mapaAtacado[chave]) {
+                    mapaAtacado[chave] = { cliente: nomeCliente, produto: nomeProd, qtd: 0, total: 0, pago: true };
+                }
+                mapaAtacado[chave].qtd += h.qtd;
+                mapaAtacado[chave].total += h.total;
+                if(!h.pago) { mapaAtacado[chave].pago = false; }
+            }
+        });
+
+        let chavesAgrupadas = Object.keys(mapaAtacado);
+        if(chavesAgrupadas.length === 0) {
+            corpoAtacado.innerHTML = `<tr><td colspan="5" style="color:#888">Nenhuma venda de atacado registrada neste dia.</td></tr>`;
+        } else {
+            chavesAgrupadas.forEach(c => {
+                let dado = mapaAtacado[c];
+                corpoAtacado.innerHTML += `<tr><td><b>${dado.cliente}</b></td><td>${dado.produto}</td><td>${dado.qtd}</td><td>R$ ${dado.total.toFixed(2)}</td><td style="font-weight:bold; color:${dado.pago?'green':'red'}">${dado.pago ? 'PAGO' : 'PENDENTE'}</td></tr>`;
+            });
+        }
+
+        document.getElementById('pdf-caixa-inicial').innerText = (caixaInicialFonte || 0).toFixed(2);
+        document.getElementById('pdf-faturamento-vendas').innerText = totalGeral.toFixed(2);
+        
+        let totalRealComTroco = totalGeral + (caixaInicialFonte || 0);
+        document.getElementById('pdf-total-geral').innerText = `R$ ${totalRealComTroco.toFixed(2)}`;
+        
+        if(obsFonte) { 
+            document.getElementById('pdf-obs-container').style.display = 'block'; 
+            document.getElementById('pdf-obs').innerText = obsFonte; 
+        } else {
+            document.getElementById('pdf-obs-container').style.display = 'none';
+        }
+        
+        document.body.classList.add('print-mode-relatorio');
+        window.print();
+        document.body.classList.remove('print-mode-relatorio');
+    }
+</script>
+</body>
+</html>
