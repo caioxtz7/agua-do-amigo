@@ -141,6 +141,7 @@
         <div class="aba" onclick="guia('entrega', this)">ENTREGA</div>
         <div class="aba" onclick="guia('estoque', this)">ESTOQUE</div>
         <div class="aba" onclick="guia('historico', this)">📜 HISTÓRICO</div>
+        <div class="aba" onclick="guia('fiado', this)" style="background: #f8d7da; color: #721c24;">💰 FIADO</div>
         <div class="aba" onclick="guia('obs', this)" style="background: #fff3cd; color: #856404;">📝 OBS</div>
     </div>
 
@@ -220,6 +221,22 @@
         </div>
     </div>
 
+    <div id="fiado" class="secao">
+        <div class="caixa-form" style="background: #fef0f0; border-color: #f5c6cb;">
+            <strong style="color: #dc3545;">🛑 Cadastrar Novo Devedor:</strong>
+            <input type="text" id="dev_nome" placeholder="Nome do Cliente">
+            <input type="number" id="dev_valor" placeholder="Valor da Dívida (R$)" step="0.01">
+            <input type="text" id="dev_obs" placeholder="Observação (Ex: 2 galões pendentes)">
+            <button onclick="salvarDevedor()" style="background: #dc3545; color: white; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold;">SALVAR DÍVIDA</button>
+        </div>
+        
+        <div style="font-size: 16px; margin-bottom: 15px; padding: 12px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-card); text-align: center;">
+            <strong>Total a Receber na Rua:</strong> <span id="total_fiado" style="color: #dc3545; font-size: 22px; font-weight: bold;">R$ 0,00</span>
+        </div>
+        
+        <div id="lista_fiado"></div>
+    </div>
+
     <div id="obs" class="secao">
         <div class="caixa-form" style="background: #fff9e6; border-color: #ffeeba;">
             <strong>📝 Anotações e Observações do Dia:</strong>
@@ -258,7 +275,7 @@
             <option value="PIX">PIX</option>
             <option value="Cartão">Cartão</option>
             <option value="Mesclado">Mesclado (Dinheiro + Outro)</option>
-            <option value="Pendente">Pagar Depois (Pendente)</option>
+            <option value="Pendente">Pagar Later (Pendente)</option>
         </select>
 
         <div id="div-valor-dinheiro" style="display:none;">
@@ -358,10 +375,11 @@
         db = JSON.parse(localStorage.getItem('AGUA_V24'));
         if (!db || !db.produtos || !db.atacado || !db.entrega) { throw new Error("Nova Versão"); }
     } catch(e) {
-        db = { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, historico: [], temaEscuro: false, caixaInicial: 0 };
+        db = { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, historico: [], temaEscuro: false, caixaInicial: 0, devedores: [] };
     }
 
     if (!db.historico) db.historico = [];
+    if (!db.devedores) db.devedores = [];
     if (db.temaEscuro === undefined) db.temaEscuro = false;
     if (db.caixaInicial === undefined) db.caixaInicial = 0;
 
@@ -864,6 +882,7 @@
         localStorage.setItem('AGUA_V24', JSON.stringify(db));
         aplicarTema();
         const lLoja = document.getElementById('lista_loja'), lAta = document.getElementById('lista_atacado'), lEnt = document.getElementById('lista_entrega'), lEst = document.getElementById('lista_estoque'), lHist = document.getElementById('lista_historico');
+        const lFiado = document.getElementById('lista_fiado');
         const sAC = document.getElementById('a_p_idx'), sEC = document.getElementById('e_p_idx'), sAA = document.getElementById('avulso_a_p'), sEA = document.getElementById('avulso_e_p');
         
         if(!lLoja) return;
@@ -871,6 +890,8 @@
         const bA = document.getElementById('busca_atacado') ? document.getElementById('busca_atacado').value.toLowerCase() : '';
         const bE = document.getElementById('busca_entrega') ? document.getElementById('busca_entrega').value.toLowerCase() : '';
         lLoja.innerHTML = lAta.innerHTML = lEnt.innerHTML = lEst.innerHTML = lHist.innerHTML = '';
+        if (lFiado) lFiado.innerHTML = '';
+        
         sAC.innerHTML = sEC.innerHTML = sAA.innerHTML = sEA.innerHTML = '<option value="">Escolha o Produto...</option>';
         
         let totalFaturamentoGeral = 0;
@@ -982,6 +1003,32 @@
                     </div>`;
             });
         }
+
+        // --- RENDERIZAR FIADO ---
+        if (lFiado) {
+            let totalFiadoCalc = 0;
+            if (!db.devedores || db.devedores.length === 0) {
+                lFiado.innerHTML = '<p style="text-align:center; color:#888; font-size:13px; margin: 20px 0;">Nenhum devedor cadastrado.</p>';
+            } else {
+                db.devedores.forEach((d, i) => {
+                    totalFiadoCalc += d.valor;
+                    lFiado.innerHTML += `
+                    <div class="card" style="border-left: 4px solid #dc3545;">
+                        <div class="flex-row">
+                            <div><b>${d.nome}</b><br><small style="color:var(--texto-pequeno);">${d.obs} (${d.data})</small></div>
+                            <div style="font-size: 18px; font-weight: bold; color: #dc3545;">R$ ${d.valor.toFixed(2)}</div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn-acao baixa" style="padding:8px 12px;" onclick="abaterDivida(${i})">💰 Receber / Abater</button>
+                            <button class="btn-acao del" onclick="excluirDevedor(${i})">🗑️ Excluir</button>
+                        </div>
+                    </div>`;
+                });
+            }
+            if(document.getElementById('total_fiado')) {
+                document.getElementById('total_fiado').innerText = `R$ ${totalFiadoCalc.toFixed(2)}`;
+            }
+        }
         
         if(document.getElementById('campo_obs')) document.getElementById('campo_obs').value = db.obs || '';
         if(document.getElementById('caixa_inicial_input') && !document.getElementById('caixa_inicial_input').matches(':focus')) {
@@ -999,6 +1046,47 @@
     }
 
     function salvarObs() { db.obs = document.getElementById('campo_obs').value; localStorage.setItem('AGUA_V24', JSON.stringify(db)); }
+    
+    function salvarDevedor() {
+        const n = document.getElementById('dev_nome').value.trim();
+        const v = parseFloat(document.getElementById('dev_valor').value);
+        const o = document.getElementById('dev_obs').value.trim() || "Sem observações";
+        
+        if (n && !isNaN(v) && v > 0) {
+            db.devedores.push({ nome: n, valor: v, obs: o, data: obterHorarioAtual().split(' - ')[0] });
+            document.getElementById('dev_nome').value = '';
+            document.getElementById('dev_valor').value = '';
+            document.getElementById('dev_obs').value = '';
+            dispararNotificacao("Devedor registrado com sucesso! 🛑");
+            renderizar();
+        } else {
+            alert("Preencha o nome e um valor maior que zero!");
+        }
+    }
+
+    function abaterDivida(i) {
+        let dev = db.devedores[i];
+        let valorPago = parseFloat(prompt(`Dívida atual de ${dev.nome}: R$ ${dev.valor.toFixed(2)}\n\nQuanto o cliente está pagando? (Use ponto para centavos, ex: 15.50)`));
+        
+        if (!isNaN(valorPago) && valorPago > 0) {
+            if (valorPago >= dev.valor) {
+                alert(`Dívida de ${dev.nome} totalmente quitada! 🎉`);
+                db.devedores.splice(i, 1);
+            } else {
+                dev.valor -= valorPago;
+                alert(`Pagamento parcial registrado. Resta receber R$ ${dev.valor.toFixed(2)}`);
+            }
+            renderizar();
+        }
+    }
+
+    function excluirDevedor(i) {
+        if(confirm("Tem certeza que deseja apagar essa dívida (sem registrar recebimento)?")) {
+            db.devedores.splice(i, 1);
+            renderizar();
+        }
+    }
+
     function salvarProduto() {
         const n = document.getElementById('p_nome').value, pl = parseFloat(document.getElementById('p_preco_l').value), pe = parseFloat(document.getElementById('p_preco_e').value);
         if(n) { db.produtos.push({nome: n, pL: pl, pE: pe, qtd: 0, estoque_inicial: 0, vazios: 0, v_l: 0, v_e: 0, v_a_r: 0, v_a_q: 0}); document.getElementById('p_nome').value=''; document.getElementById('p_preco_l').value=''; document.getElementById('p_preco_e').value=''; renderizar(); }
