@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão v35</title>
+    <title>Água do Amigo - Gestão v36</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         /* --- CORES PADRÃO (MODO CLARO) --- */
@@ -134,6 +134,14 @@
 <div class="container">
     <button class="btn-tema" onclick="alternarTema()">🌙 ESCURO</button>
     <h1>💧 Água do Amigo</h1>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-caixa-form); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border-caixa-form);">
+        <label style="font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px;">📅 Histórico do Caixa:</label>
+        <select id="seletor_data" onchange="selecionarData(this.value)" style="margin: 0; width: auto; padding: 6px 12px; font-size: 14px; border: 1px solid #007bff; border-radius: 6px; font-weight: bold; cursor: pointer;"></select>
+    </div>
+    <div id="aviso-leitura" style="display:none; background: #dc3545; color: white; text-align: center; padding: 10px; font-weight: bold; border-radius: 8px; margin-bottom: 15px; font-size: 13px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+        ⚠️ MODO VISUALIZAÇÃO: Exibindo dia encerrado. Novas ações estão bloqueadas.
+    </div>
 
     <div class="abas">
         <div class="aba active" onclick="guia('loja', this)">LOJA</div>
@@ -370,20 +378,32 @@
     let db;
     let vendaAtiva = null; 
     let comanda = []; // Guarda múltiplos itens temporariamente antes de finalizar a comanda
+    let dataVisualizacao = "atual"; // Controla qual dia está a ser exibido ("atual" ou uma data "DD-MM-AAAA")
 
     try {
         db = JSON.parse(localStorage.getItem('AGUA_V24'));
         if (!db || !db.produtos || !db.atacado || !db.entrega) { throw new Error("Nova Versão"); }
     } catch(e) {
-        db = { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, historico: [], temaEscuro: false, caixaInicial: 0, devedores: [] };
+        db = { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, historico: [], temaEscuro: false, caixaInicial: 0, devedores: [], historicoDias: {} };
     }
 
     if (!db.historico) db.historico = [];
     if (!db.devedores) db.devedores = [];
+    if (!db.historicoDias) db.historicoDias = {};
     if (db.temaEscuro === undefined) db.temaEscuro = false;
     if (db.caixaInicial === undefined) db.caixaInicial = 0;
 
+    // Função interna de segurança para bloquear alterações em dados históricos passados
+    function verificarLeitura() {
+        if (dataVisualizacao !== "atual") {
+            alert("⚠️ Ação Bloqueada! Não pode realizar vendas ou edições num dia já encerrado do Histórico.");
+            return true;
+        }
+        return false;
+    }
+
     function definirCaixaInicial() {
+        if (verificarLeitura()) return;
         const inputVal = parseFloat(document.getElementById('caixa_inicial_input').value);
         if(!isNaN(inputVal) && inputVal >= 0) {
             db.caixaInicial = inputVal;
@@ -414,7 +434,7 @@
     function dispararNotificacao(mensagem) {
         const notif = document.getElementById('notificacao');
         if(notif) {
-            notif.innerText = message = mensagem;
+            notif.innerText = mensagem;
             notif.classList.add('show');
             setTimeout(() => { notif.classList.remove('show'); }, 3000);
         }
@@ -425,9 +445,15 @@
         return `${agora.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})} - ${agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`;
     }
 
+    function selecionarData(valor) {
+        dataVisualizacao = valor;
+        limparComanda();
+        renderizar();
+    }
+
     /* --- LÓGICA DA COMANDA (CARRINHO) --- */
     function adicionarAComanda(item) {
-        // Verifica se o item já existe na comanda com as mesmas características para agrupar
+        if (verificarLeitura()) return;
         let itemExistente = comanda.find(c => c.pIdx === item.pIdx && c.tipo === item.tipo && c.ref === item.ref && c.clienteNome === item.clienteNome);
         
         if (itemExistente) {
@@ -446,7 +472,7 @@
         const lista = document.getElementById('itens-comanda');
         const totalEl = document.getElementById('total-comanda');
         
-        if(comanda.length === 0) {
+        if(comanda.length === 0 || dataVisualizacao !== "atual") {
             div.style.display = 'none';
             return;
         }
@@ -466,6 +492,7 @@
     }
 
     function removerDaComanda(idx) {
+        if (verificarLeitura()) return;
         comanda.splice(idx, 1);
         atualizarComandaUI();
     }
@@ -476,11 +503,10 @@
     }
 
     function abrirModalComanda() {
+        if (verificarLeitura()) return;
         if(comanda.length === 0) return;
         
         let totalDaComanda = comanda.reduce((acc, item) => acc + item.total, 0);
-        
-        // Define a venda ativa estruturada como uma comanda multi-itens
         vendaAtiva = { total: totalDaComanda, isComanda: true };
         
         document.getElementById('modal-total-texto').innerText = `Total da Comanda: R$ ${totalDaComanda.toFixed(2)}`;
@@ -495,6 +521,7 @@
     }
 
     function abrirModalPagamento(contexto) {
+        if (verificarLeitura()) return;
         vendaAtiva = contexto;
         document.getElementById('modal-total-texto').innerText = `Total do Pedido: R$ ${contexto.total.toFixed(2)}`;
         document.getElementById('modal-forma-pag').value = 'Dinheiro';
@@ -575,6 +602,7 @@
     }
 
     function confirmarVendaModal() {
+        if (verificarLeitura()) return;
         if (!vendaAtiva) return;
         if (vendaAtiva.isComanda && comanda.length === 0) return;
         
@@ -591,8 +619,6 @@
 
         const pago = (forma !== 'Pendente');
         const horaVenda = obterHorarioAtual();
-        
-        // Define o lote de itens a processar (múltiplos itens se for comanda, ou vetor de 1 se for venda direta de entrega)
         let itensParaProcessar = vendaAtiva.isComanda ? comanda : [vendaAtiva];
 
         itensParaProcessar.forEach(item => {
@@ -613,7 +639,6 @@
                 }
             }
 
-            // Cada item vai individualmente para o histórico para controle preciso de estatísticas e planilha
             db.historico.unshift({ 
                 hora: horaVenda, 
                 produto: item.produtoNome, 
@@ -626,7 +651,7 @@
                 pIdx: item.pIdx,
                 clienteNome: item.clienteNome,
                 formaPagamento: forma,
-                vDinheiro: vendaAtiva.isComanda ? (vDinheiro * (item.total / vendaAtiva.total)) : vDinheiro, // Proporcional se for comanda
+                vDinheiro: vendaAtiva.isComanda ? (vDinheiro * (item.total / vendaAtiva.total)) : vDinheiro,
                 vOutro: vendaAtiva.isComanda ? (vOutro * (item.total / vendaAtiva.total)) : vOutro,
                 troco: vendaAtiva.isComanda ? (troco * (item.total / vendaAtiva.total)) : troco
             });
@@ -639,7 +664,6 @@
 
         dispararNotificacao("Venda registrada com sucesso! 🎉");
 
-        // Imprime o cupom contendo todos os itens processados nesta transação
         imprimirCupomAutomatico({
             hora: horaVenda,
             tipo: vendaAtiva.isComanda ? 'Múltiplos (Comanda)' : vendaAtiva.tipo,
@@ -707,10 +731,10 @@
     }
 
     function vendaL(i) { 
+        if (verificarLeitura()) return;
         const p = db.produtos[i];
         if(!p) return;
         
-        // Verifica quantidade já adicionada na comanda pendente
         let qtdNaComanda = comanda.filter(c => c.pIdx === i && c.tipo === 'Balcão').reduce((acc, c) => acc + c.qtd, 0);
 
         if(p.qtd > qtdNaComanda) { 
@@ -723,10 +747,10 @@
     }
     
     function vendaE(i) { 
+        if (verificarLeitura()) return;
         const pIdx = db.entrega[i].pIdx; const p = db.produtos[pIdx];
         if(!p) return;
         if(p.qtd > 0) { 
-            // As entregas continuam individuais imediatas devido à saída para entrega de motoboy
             abrirModalPagamento({
                 tipo: 'Entrega', qtd: 1, total: p.pE,
                 produtoNome: `${p.nome} - Cliente: ${db.entrega[i].nome}`,
@@ -736,6 +760,7 @@
     }
     
     function vendaA(i) { 
+        if (verificarLeitura()) return;
         const inputQtd = document.getElementById(`q_a_${i}`);
         if(!inputQtd) return;
         const q = parseInt(inputQtd.value);
@@ -762,6 +787,7 @@
     }
     
     function vendaAvulsa(tipo) {
+        if (verificarLeitura()) return;
         const pIdx = document.getElementById(tipo === 'A' ? 'avulso_a_p' : 'avulso_e_p').value;
         if(pIdx === "") return;
         const p = db.produtos[pIdx];
@@ -792,6 +818,7 @@
     }
 
     function darBaixaPagamento(index) {
+        if (verificarLeitura()) return;
         const h = db.historico[index];
         if (!h || h.pago) return;
 
@@ -813,6 +840,7 @@
     }
 
     function estornarVenda(index) {
+        if (verificarLeitura()) return;
         if (!confirm("Tem certeza que deseja cancelar e apagar esta venda? O estoque será devolvido.")) return;
         const venda = db.historico[index];
         let prod = db.produtos[venda.pIdx];
@@ -840,13 +868,16 @@
     }
 
     function enviarZapCliente(index) {
-        const h = db.historico[index]; if(!h) return;
+        // Envio de mensagens permitido mesmo em dados históricos
+        let histLocal = dataVisualizacao === "atual" ? db.historico : (db.historicoDias[dataVisualizacao]?.historico || []);
+        const h = histLocal[index]; if(!h) return;
         let msg = `*💧 Água do Amigo*\n\nOlá! Seu pedido foi registrado! 🎉\n\n📋 *Pedido:* ${h.qtd}x ${h.produto.split(' - ')[0]}\n▪️ *Valor:* R$ ${h.total.toFixed(2)}\n▪️ *Pagamento:* ${h.pago ? '✅ Pago ('+h.formaPagamento+')' : '⏳ Pagar na Entrega'}\n\nAgradecemos a preferência! 👍`;
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
     }
 
     function enviarZapMotoboy(index) {
-        const h = db.historico[index]; if(!h) return;
+        let histLocal = dataVisualizacao === "atual" ? db.historico : (db.historicoDias[dataVisualizacao]?.historico || []);
+        const h = histLocal[index]; if(!h) return;
         let clienteNome = h.clienteNome || "Cliente Avulso";
         let msg = `*🏍️ Água do Amigo - NOVA ENTREGA*\n\n👤 *Cliente:* ${clienteNome}\n📍 *Endereço:* ${h.endereco || 'Não informado'}\n📦 *Pedido:* ${h.qtd}x ${h.produto.split(' - ')[0]}\n💰 *Valor:* R$ ${h.total.toFixed(2)}\n💳 *Status:* ${h.pago ? '🔴 JÁ ESTÁ PAGO' : '🟢 RECEBER NO LOCAL ('+h.formaPagamento+')'}\n\nBoa corrida! 💧`;
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
@@ -866,12 +897,20 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => { renderizar(); });
+    
     function importarDados() {
         const input = document.createElement("input"); input.type = "file"; input.accept = ".json";
         input.onchange = e => {
             const leitor = new FileReader();
             leitor.onload = ev => {
-                try { db = JSON.parse(ev.target.result); renderizar(); limparComanda(); dispararNotificacao("📂 Dados importados!"); } catch(err) { alert("Arquivo inválido."); }
+                try { 
+                    db = JSON.parse(ev.target.result); 
+                    if(!db.historicoDias) db.historicoDias = {};
+                    dataVisualizacao = "atual";
+                    renderizar(); 
+                    limparComanda(); 
+                    dispararNotificacao("📂 Dados importados!"); 
+                } catch(err) { alert("Arquivo inválido."); }
             };
             leitor.readAsText(e.target.files[0]);
         };
@@ -881,6 +920,43 @@
     function renderizar() {
         localStorage.setItem('AGUA_V24', JSON.stringify(db));
         aplicarTema();
+
+        // Determinar as fontes de dados com base no dia ativo ou passado
+        let IsLeitura = (dataVisualizacao !== "atual");
+        let produtosFonte = IsLeitura ? (db.historicoDias[dataVisualizacao]?.produtos || []) : db.produtos;
+        let historicoFonte = IsLeitura ? (db.historicoDias[dataVisualizacao]?.historico || []) : db.historico;
+        let caixaInicialFonte = IsLeitura ? (db.historicoDias[dataVisualizacao]?.caixaInicial || 0) : db.caixaInicial;
+        let obsFonte = IsLeitura ? (db.historicoDias[dataVisualizacao]?.obs || "") : db.obs;
+
+        // Atualizar Seletor de Datas Dinamicamente
+        const seletor = document.getElementById('seletor_data');
+        if (seletor) {
+            let valorAntigo = seletor.value || dataVisualizacao;
+            seletor.innerHTML = '<option value="atual">📥 Caixa Atual / Aberto</option>';
+            Object.keys(db.historicoDias).sort((a,b) => {
+                const pA = a.split('-'); const pB = b.split('-');
+                if(pA.length === 3 && pB.length === 3) {
+                    return new Date(pB[2], pB[1]-1, pB[0]) - new Date(pA[2], pA[1]-1, pA[0]);
+                }
+                return b.localeCompare(a);
+            }).forEach(dataChave => {
+                seletor.innerHTML += `<option value="${dataChave}">📜 Dia ${dataChave.replace(/-/g, '/')}</option>`;
+            });
+            seletor.value = valorAntigo;
+        }
+
+        // Aviso de Modo Leitura
+        const avisoLeitura = document.getElementById('aviso-leitura');
+        if (avisoLeitura) avisoLeitura.style.display = IsLeitura ? "block" : "none";
+
+        // Ocultar formulários de registo e blocos avulsos se estiver em modo leitura
+        document.querySelectorAll('.caixa-form strong').forEach(strong => {
+            if (strong.innerText.includes('Cadastrar') || strong.innerText.includes('Abertura de Caixa') || strong.innerText.includes('Novo Devedor')) {
+                strong.parentElement.style.display = IsLeitura ? 'none' : 'block';
+            }
+        });
+        document.querySelectorAll('.venda-avulsa').forEach(el => el.style.display = IsLeitura ? 'none' : 'block');
+
         const lLoja = document.getElementById('lista_loja'), lAta = document.getElementById('lista_atacado'), lEnt = document.getElementById('lista_entrega'), lEst = document.getElementById('lista_estoque'), lHist = document.getElementById('lista_historico');
         const lFiado = document.getElementById('lista_fiado');
         const sAC = document.getElementById('a_p_idx'), sEC = document.getElementById('e_p_idx'), sAA = document.getElementById('avulso_a_p'), sEA = document.getElementById('avulso_e_p');
@@ -895,7 +971,7 @@
         sAC.innerHTML = sEC.innerHTML = sAA.innerHTML = sEA.innerHTML = '<option value="">Escolha o Produto...</option>';
         
         let totalFaturamentoGeral = 0;
-        db.produtos.forEach((p, i) => {
+        produtosFonte.forEach((p, i) => {
             if (p.v_l === undefined) p.v_l = 0;
             if (p.v_e === undefined) p.v_e = 0;
             if (p.v_a_q === undefined) p.v_a_q = 0;
@@ -910,13 +986,13 @@
 
             lLoja.innerHTML += `<div class="card">
                 <div class="flex-row">
-                    <div><b>${p.nome}</b><br><small style="color:#007bff">Estoque: ${p.qtd}</small></div>
-                    <button style="background:#007bff; color:white; padding:10px 15px;" onclick="vendaL(${i})">+ COMANDA</button>
+                    <div><b>${p.nome}</b><br><small style="color:#007bff">Estoque do Dia: ${p.qtd}</small></div>
+                    <button style="background:#007bff; color:white; padding:10px 15px; ${IsLeitura ? 'display:none;' : ''}" onclick="vendaL(${i})">+ COMANDA</button>
                 </div>
                 <div class="info-vendas">
                     <span>🛒 Balcão: <b>${p.v_l}</b></span> | <span>🚚 Entrega: <b>${p.v_e}</b></span> | <span>🏢 Atacado: <b>${p.v_a_q}</b></span>
                 </div>
-                <div class="card-footer">
+                <div class="card-footer" style="${IsLeitura ? 'display:none;' : ''}">
                     <button class="btn-acao edit" onclick="editarProduto(${i})">✏️ Editar</button>
                     <button class="btn-acao del" onclick="excluirProduto(${i})">🗑️ Excluir</button>
                 </div>
@@ -925,24 +1001,25 @@
             lEst.innerHTML += `<div class="card">
                 <div class="flex-row">
                     <div><b>${p.nome}</b><br><small>Inicial: ${p.estoque_inicial || 0}</small></div> 
-                    <span>Cheio: <b>${p.qtd}</b> <button onclick="ajustar(${i}, 'qtd')">✏️</button></span>
+                    <span>Cheio: <b>${p.qtd}</b> ${IsLeitura ? '' : `<button onclick="ajustar(${i}, 'qtd')">✏️</button>`}</span>
                 </div>
                 <div class="flex-row" style="margin-top:10px; border-top: 1px solid var(--border-card); padding-top:10px">
-                    <div style="font-size: 11px; flex: 1">Vazios: <b>${p.vazios || 0}</b> <button onclick="ajustar(${i}, 'vazios')">✏️</button></div>
-                    <button style="padding: 5px 10px; background:#666; color:#fff;" onclick="mudarVazio(${i}, 1)">+1 Vazio</button>
-                    <button style="padding: 5px 10px; margin-left:5px; background:#666; color:#fff;" onclick="mudarVazio(${i}, -1)">-1 Vazio</button>
+                    <div style="font-size: 11px; flex: 1">Vazios: <b>${p.vazios || 0}</b> ${IsLeitura ? '' : `<button onclick="ajustar(${i}, 'vazios')">✏️</button>`}</div>
+                    <button style="padding: 5px 10px; background:#666; color:#fff; ${IsLeitura?'display:none;':''}" onclick="mudarVazio(${i}, 1)">+1 Vazio</button>
+                    <button style="padding: 5px 10px; margin-left:5px; background:#666; color:#fff; ${IsLeitura?'display:none;':''}" onclick="mudarVazio(${i}, -1)">-1 Vazio</button>
                 </div>
             </div>`;
         });
 
         db.atacado.forEach((c, i) => {
             if (c.nome.toLowerCase().includes(bA)) {
+                let prodNome = produtosFonte[c.pIdx]?.nome || db.produtos[c.pIdx]?.nome || 'Produto';
                 lAta.innerHTML += `<div class="card">
                     <div class="flex-row">
-                        <div><b>${c.nome}</b><br><small>${db.produtos[c.pIdx]?.nome || 'Produto'} - R$ ${c.preco.toFixed(2)}</small></div>
-                        <div style="display:flex; gap:5px"><input type="number" id="q_a_${i}" placeholder="Qtd" style="margin:0; width:60px; background:var(--bg-container)"><button style="background:#fd7e14; color:white; padding:10px" onclick="vendaA(${i})">+ COMANDA</button></div>
+                        <div><b>${c.nome}</b><br><small>${prodNome} - R$ ${c.preco.toFixed(2)}</small></div>
+                        ${IsLeitura ? '' : `<div style="display:flex; gap:5px"><input type="number" id="q_a_${i}" placeholder="Qtd" style="margin:0; width:60px; background:var(--bg-container)"><button style="background:#fd7e14; color:white; padding:10px" onclick="vendaA(${i})">+ COMANDA</button></div>`}
                     </div>
-                    <div class="card-footer">
+                    <div class="card-footer" style="${IsLeitura ? 'display:none;' : ''}">
                         <button class="btn-acao edit" onclick="editarAtacado(${i})">✏️ Editar</button>
                         <button class="btn-acao del" onclick="excluirAtacado(${i})">🗑️ Excluir</button>
                     </div>
@@ -955,9 +1032,9 @@
                 lEnt.innerHTML += `<div class="card">
                     <div class="flex-row">
                         <div><b>${c.nome}</b><br><small>${c.end || 'Sem endereço'}</small></div>
-                        <button style="background:#17a2b8; color:white; padding:10px" onclick="vendaE(${i})">SAÍDA +1</button>
+                        ${IsLeitura ? '' : `<button style="background:#17a2b8; color:white; padding:10px" onclick="vendaE(${i})">SAÍDA +1</button>`}
                     </div>
-                    <div class="card-footer">
+                    <div class="card-footer" style="${IsLeitura ? 'display:none;' : ''}">
                         <button class="btn-acao edit" onclick="editarEntrega(${i})">✏️ Editar</button>
                         <button class="btn-acao del" onclick="excluirEntrega(${i})">🗑️ Excluir</button>
                     </div>
@@ -965,17 +1042,17 @@
             }
         });
 
-        if(db.historico.length === 0) {
-            lHist.innerHTML = '<p style="text-align:center; color:#888; font-size:13px; margin: 20px 0;">Nenhuma venda realizada hoje.</p>';
+        if(historicoFonte.length === 0) {
+            lHist.innerHTML = '<p style="text-align:center; color:#888; font-size:13px; margin: 20px 0;">Nenhuma venda realizada neste dia.</p>';
         } else {
-            db.historico.forEach((h, index) => {
+            historicoFonte.forEach((h, index) => {
                 let tagClasse = h.tipo === 'Balcão' ? 'tag-balcao' : (h.tipo === 'Entrega' ? 'tag-entrega' : 'tag-atacado');
                 let tagPagamento = h.pago ? `<span class="tag-pagamento pago-sim">PAGO (${h.formaPagamento || 'Dinheiro'})</span>` : '<span class="tag-pagamento pago-nao">PENDENTE</span>';
-                let botaoBaixa = !h.pago ? `<button class="btn-acao baixa" style="padding:6px 10px; font-size:11px;" onclick="darBaixaPagamento(${index})">💰 Baixa</button>` : '';
+                let botaoBaixa = (!h.pago && !IsLeitura) ? `<button class="btn-acao baixa" style="padding:6px 10px; font-size:11px;" onclick="darBaixaPagamento(${index})">💰 Baixa</button>` : '';
 
                 let infoMesclado = "";
                 if(h.formaPagamento === 'Mesclado') {
-                    infoMesclado = `<div style="font-size:11px; color:var(--texto-pequeno); margin-top:2px;">Dinheiro: R$ ${h.vDinheiro.toFixed(2)} | Outro: R$ ${h.vOutro.toFixed(2)}</div>`;
+                    infoMesclado = `<div style="font-size:11px; color:var(--texto-pequeno); margin-top:2px;">Dinheiro: R$ ${(h.vDinheiro||0).toFixed(2)} | Outro: R$ ${(h.vOutro||0).toFixed(2)}</div>`;
                 }
 
                 let botoesZap = (h.tipo === 'Entrega') ? `
@@ -983,6 +1060,8 @@
                     <button class="btn-acao zap" style="padding:6px; font-size:11px; background:#e7f1ff; color:#007bff;" onclick="enviarZapMotoboy(${index})">🏍️ Moto</button>
                 ` : (h.tipo === 'Atacado' ? `<button class="btn-acao zap" style="padding:6px; font-size:11px;" onclick="enviarZapCliente(${index})">💬 Zap</button>` : '');
                 
+                let botaoExcluir = IsLeitura ? '' : `<button class="btn-acao del" style="padding: 6px; font-size:11px;" onclick="estornarVenda(${index})">❌</button>`;
+
                 lHist.innerHTML += `
                     <div class="item-historico">
                         <div style="flex: 1;">
@@ -997,14 +1076,13 @@
                             </div>
                         </div>
                         <div style="display:flex; gap:4px; align-items:center;">
-                            ${botaoBaixa} ${botoesZap}
-                            <button class="btn-acao del" style="padding: 6px; font-size:11px;" onclick="estornarVenda(${index})">❌</button>
+                            ${botaoBaixa} ${botoesZap} ${botaoExcluir}
                         </div>
                     </div>`;
             });
         }
 
-        // --- RENDERIZAR FIADO ---
+        // Renderizar Fiado (Sempre Global)
         if (lFiado) {
             let totalFiadoCalc = 0;
             if (!db.devedores || db.devedores.length === 0) {
@@ -1019,8 +1097,8 @@
                             <div style="font-size: 18px; font-weight: bold; color: #dc3545;">R$ ${d.valor.toFixed(2)}</div>
                         </div>
                         <div class="card-footer">
-                            <button class="btn-acao baixa" style="padding:8px 12px;" onclick="abaterDivida(${i})">💰 Receber / Abater</button>
-                            <button class="btn-acao del" onclick="excluirDevedor(${i})">🗑️ Excluir</button>
+                            <button class="btn-acao baixa" style="padding:8px 12px; ${IsLeitura?'display:none;':''}" onclick="abaterDivida(${i})">💰 Receber / Abater</button>
+                            <button class="btn-acao del" style="${IsLeitura?'display:none;':''}" onclick="excluirDevedor(${i})">🗑️ Excluir</button>
                         </div>
                     </div>`;
                 });
@@ -1030,24 +1108,35 @@
             }
         }
         
-        if(document.getElementById('campo_obs')) document.getElementById('campo_obs').value = db.obs || '';
-        if(document.getElementById('caixa_inicial_input') && !document.getElementById('caixa_inicial_input').matches(':focus')) {
-            document.getElementById('caixa_inicial_input').value = db.caixaInicial || '';
+        if(document.getElementById('campo_obs')) {
+            document.getElementById('campo_obs').value = obsFonte || '';
+            document.getElementById('campo_obs').disabled = IsLeitura;
         }
+
+        if(document.getElementById('caixa_inicial_input') && !document.getElementById('caixa_inicial_input').matches(':focus')) {
+            document.getElementById('caixa_inicial_input').value = caixaInicialFonte || '';
+            document.getElementById('caixa_inicial_input').disabled = IsLeitura;
+        }
+        const caixaBtn = document.querySelector('.caixa-form button[onclick="definirCaixaInicial()"]');
+        if (caixaBtn) caixaBtn.disabled = IsLeitura;
         
-        let totalComTroco = totalFaturamentoGeral + (db.caixaInicial || 0);
+        let totalComTroco = totalFaturamentoGeral + (caixaInicialFonte || 0);
         if(document.getElementById('faturamento_hoje')) document.getElementById('faturamento_hoje').innerText = "R$ " + totalComTroco.toFixed(2);
         if(document.getElementById('detalhe_caixa_inicial')) {
-            document.getElementById('detalhe_caixa_inicial').innerText = `Troco Inicial: R$ ${(db.caixaInicial || 0).toFixed(2)} | Vendas: R$ ${totalFaturamentoGeral.toFixed(2)}`;
+            document.getElementById('detalhe_caixa_inicial').innerText = `Troco Inicial: R$ ${(caixaInicialFonte || 0).toFixed(2)} | Vendas: R$ ${totalFaturamentoGeral.toFixed(2)}`;
         }
         
-        // Mantém a interface da comanda flutuante alinhada
         atualizarComandaUI();
     }
 
-    function salvarObs() { db.obs = document.getElementById('campo_obs').value; localStorage.setItem('AGUA_V24', JSON.stringify(db)); }
+    function salvarObs() { 
+        if (dataVisualizacao !== "atual") return;
+        db.obs = document.getElementById('campo_obs').value; 
+        localStorage.setItem('AGUA_V24', JSON.stringify(db)); 
+    }
     
     function salvarDevedor() {
+        if (verificarLeitura()) return;
         const n = document.getElementById('dev_nome').value.trim();
         const v = parseFloat(document.getElementById('dev_valor').value);
         const o = document.getElementById('dev_obs').value.trim() || "Sem observações";
@@ -1065,6 +1154,7 @@
     }
 
     function abaterDivida(i) {
+        if (verificarLeitura()) return;
         let dev = db.devedores[i];
         let valorPago = parseFloat(prompt(`Dívida atual de ${dev.nome}: R$ ${dev.valor.toFixed(2)}\n\nQuanto o cliente está pagando? (Use ponto para centavos, ex: 15.50)`));
         
@@ -1081,6 +1171,7 @@
     }
 
     function excluirDevedor(i) {
+        if (verificarLeitura()) return;
         if(confirm("Tem certeza que deseja apagar essa dívida (sem registrar recebimento)?")) {
             db.devedores.splice(i, 1);
             renderizar();
@@ -1088,29 +1179,49 @@
     }
 
     function salvarProduto() {
+        if (verificarLeitura()) return;
         const n = document.getElementById('p_nome').value, pl = parseFloat(document.getElementById('p_preco_l').value), pe = parseFloat(document.getElementById('p_preco_e').value);
         if(n) { db.produtos.push({nome: n, pL: pl, pE: pe, qtd: 0, estoque_inicial: 0, vazios: 0, v_l: 0, v_e: 0, v_a_r: 0, v_a_q: 0}); document.getElementById('p_nome').value=''; document.getElementById('p_preco_l').value=''; document.getElementById('p_preco_e').value=''; renderizar(); }
     }
     function salvarAtacado() { 
+        if (verificarLeitura()) return;
         const n = document.getElementById('a_nome').value, p = document.getElementById('a_p_idx').value, pr = parseFloat(document.getElementById('a_preco').value);
         if(n && p!=="") { db.atacado.push({nome: n, pIdx: parseInt(p), preco: pr, vendas_hoje: 0}); document.getElementById('a_nome').value=''; document.getElementById('a_preco').value=''; renderizar(); } 
     }
     function salvarEntrega() { 
+        if (verificarLeitura()) return;
         const n = document.getElementById('e_nome').value, e = document.getElementById('e_end').value, p = document.getElementById('e_p_idx').value;
         if(n && p!=="") { db.entrega.push({nome: n, end: e, pIdx: parseInt(p)}); document.getElementById('e_nome').value=''; document.getElementById('e_end').value=''; renderizar(); } 
     }
 
     function editarProduto(i) {
+        if (verificarLeitura()) return;
         let p = db.produtos[i]; let nome = prompt("Nome:", p.nome), pL = prompt("Preço Balcão:", p.pL), pE = prompt("Preço Entrega:", p.pE);
         if(nome && pL && pE) { p.nome = nome; p.pL = parseFloat(pL); p.pE = parseFloat(pE); renderizar(); }
     }
-    function excluirProduto(i) { if(confirm("Excluir produto e vínculos?")) { db.produtos.splice(i, 1); renderizar(); } }
-    function editarAtacado(i) { let c = db.atacado[i]; let n = prompt("Nome:", c.nome), p = prompt("Preço:", c.preco); if(n && p) { c.nome = n; c.preco = parseFloat(p); renderizar(); } }
-    function excluirAtacado(i) { if(confirm("Excluir?")) { db.atacado.splice(i, 1); renderizar(); } }
-    function editarEntrega(i) { let c = db.entrega[i]; let n = prompt("Nome:", c.nome), e = prompt("Endereço:", c.end); if(n && e) { c.nome = n; c.end = e; renderizar(); } }
-    function excluirEntrega(i) { if(confirm("Excluir?")) { db.entrega.splice(i, 1); renderizar(); } }
+    function excluirProduto(i) { 
+        if (verificarLeitura()) return;
+        if(confirm("Excluir produto e vínculos?")) { db.produtos.splice(i, 1); renderizar(); } 
+    }
+    function editarAtacado(i) { 
+        if (verificarLeitura()) return;
+        let c = db.atacado[i]; let n = prompt("Nome:", c.nome), p = prompt("Preço:", c.preco); if(n && p) { c.nome = n; c.preco = parseFloat(p); renderizar(); } 
+    }
+    function excluirAtacado(i) { 
+        if (verificarLeitura()) return;
+        if(confirm("Excluir?")) { db.atacado.splice(i, 1); renderizar(); } 
+    }
+    function editarEntrega(i) { 
+        if (verificarLeitura()) return;
+        let c = db.entrega[i]; let n = prompt("Nome:", c.nome), e = prompt("Endereço:", c.end); if(n && e) { c.nome = n; c.end = e; renderizar(); } 
+    }
+    function excluirEntrega(i) { 
+        if (verificarLeitura()) return;
+        if(confirm("Excluir?")) { db.entrega.splice(i, 1); renderizar(); } 
+    }
 
     function ajustar(i, campo) { 
+        if (verificarLeitura()) return;
         let val = prompt("Novo valor:", db.produtos[i][campo]);
         if(val !== null) { 
             db.produtos[i][campo] = parseInt(val) || 0; 
@@ -1118,72 +1229,63 @@
             renderizar(); 
         }
     }
-    function mudarVazio(i, qtd) { db.produtos[i].vazios = Math.max(0, (db.produtos[i].vazios || 0) + qtd); renderizar(); }
+    function mudarVazio(i, qtd) { 
+        if (verificarLeitura()) return;
+        db.produtos[i].vazios = Math.max(0, (db.produtos[i].vazios || 0) + qtd); renderizar(); 
+    }
 
     function zerarVendas() {
-        if(!confirm("Zerar as vendas do dia? Estoque atual, cadastros e o valor de abertura do caixa serão redefinidos.")) return;
-        db.produtos.forEach(p => { p.estoque_inicial = p.qtd; p.v_l = 0; p.v_e = 0; p.v_a_q = 0; p.v_a_r = 0; p.vazios = 0; });
+        if (dataVisualizacao !== "atual") {
+            alert("⚠️ Não pode encerrar um dia antigo. Mude para 'Caixa Atual / Aberto' primeiro.");
+            return;
+        }
+
+        if(!confirm("Deseja Encerrar e Arquivar o dia de hoje? Os contadores diários serão limpos e salvos no histórico retroativo.")) return;
+        
+        let dataPadrao = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+        let dataConfirmada = prompt("Confirme a data para este fechamento (DD-MM-AAAA):", dataPadrao);
+        if (!dataConfirmada) return;
+
+        // Criar snapshot completo do dia antes de limpar
+        db.historicoDias[dataConfirmada] = {
+            produtos: JSON.parse(JSON.stringify(db.produtos)),
+            historico: JSON.parse(JSON.stringify(db.historico)),
+            caixaInicial: db.caixaInicial,
+            obs: db.obs
+        };
+
+        // Redefinir para o novo dia
+        db.produtos.forEach(p => { 
+            p.estoque_inicial = p.qtd; 
+            p.v_l = 0; 
+            p.v_e = 0; 
+            p.v_a_q = 0; 
+            p.v_a_r = 0; 
+            p.vazios = 0; 
+        });
         if(db.atacado) { db.atacado.forEach(c => { c.vendas_hoje = 0; }); }
-        db.historico = []; db.obs = ""; db.caixaInicial = 0; limparComanda(); renderizar();
+        db.historico = []; 
+        db.obs = ""; 
+        db.caixaInicial = 0; 
+        
+        limparComanda(); 
+        dataVisualizacao = "atual";
+        dispararNotificacao("📅 Dia arquivado e novo caixa pronto!");
+        renderizar();
     }
 
     function gerarPDF() {
+        // Obter fonte correta dependendo do dia visualizado
+        let IsLeitura = (dataVisualizacao !== "atual");
+        let produtosFonte = IsLeitura ? (db.historicoDias[dataVisualizacao]?.produtos || []) : db.produtos;
+        let historicoFonte = IsLeitura ? (db.historicoDias[dataVisualizacao]?.historico || []) : db.historico;
+        let caixaInicialFonte = IsLeitura ? (db.historicoDias[dataVisualizacao]?.caixaInicial || 0) : db.caixaInicial;
+        let obsFonte = IsLeitura ? (db.historicoDias[dataVisualizacao]?.obs || "") : db.obs;
+
         const corpo = document.getElementById('tabela-corpo'), corpoAtacado = document.getElementById('tabela-atacado-corpo');
-        document.getElementById('data-relatorio').innerText = `Fechamento: ${obterHorarioAtual()}`;
+        
+        let rotuloData = IsLeitura ? `Histórico: Dia ${dataVisualizacao.replace(/-/g, '/')}` : `Fechamento: ${obterHorarioAtual()}`;
+        document.getElementById('data-relatorio').innerText = rotuloData;
+        
         corpo.innerHTML = ''; corpoAtacado.innerHTML = '';
-        let totalGeral = 0;
-        
-        db.produtos.forEach(p => {
-            let totalProd = (p.v_l * (p.pL || 0)) + (p.v_e * (p.pE || 0)) + (p.v_a_r || 0);
-            totalGeral += totalProd;
-            corpo.innerHTML += `<tr><td>${p.nome}</td><td>${p.estoque_inicial||0}</td><td>${p.v_l}</td><td>${p.v_e}</td><td>${p.v_a_q}</td><td>${p.qtd}</td><td>${p.vazios||0}</td><td>R$ ${totalProd.toFixed(2)}</td></tr>`;
-        });
-
-        let mapaAtacado = {};
-        db.historico.forEach(h => {
-            if(h.tipo === 'Atacado') {
-                let nomeCliente = h.clienteNome || "Atacado Avulso";
-                let nomeProd = h.produto;
-                
-                if (h.produto.includes(" (Atacado Avulso)")) {
-                    nomeProd = h.produto.replace(" (Atacado Avulso)", "");
-                } else if (h.produto.includes("(")) {
-                    nomeProd = h.produto.split("(")[1].replace(")", "");
-                }
-                
-                let chave = `${nomeCliente}_${nomeProd}`;
-
-                if(!mapaAtacado[chave]) {
-                    mapaAtacado[chave] = { cliente: nomeCliente, produto: nomeProd, qtd: 0, total: 0, pago: true };
-                }
-                mapaAtacado[chave].qtd += h.qtd;
-                mapaAtacado[chave].total += h.total;
-                if(!h.pago) { mapaAtacado[chave].pago = false; }
-            }
-        });
-
-        let chavesAgrupadas = Object.keys(mapaAtacado);
-        if(chavesAgrupadas.length === 0) {
-            corpoAtacado.innerHTML = `<tr><td colspan="5" style="color:#888">Nenhuma venda de atacado registrada hoje.</td></tr>`;
-        } else {
-            chavesAgrupadas.forEach(c => {
-                let dado = mapaAtacado[c];
-                corpoAtacado.innerHTML += `<tr><td><b>${dado.cliente}</b></td><td>${dado.produto}</td><td>${dado.qtd}</td><td>R$ ${dado.total.toFixed(2)}</td><td style="font-weight:bold; color:${dado.pago?'green':'red'}">${dado.pago ? 'PAGO' : 'PENDENTE'}</td></tr>`;
-            });
-        }
-
-        document.getElementById('pdf-caixa-inicial').innerText = (db.caixaInicial || 0).toFixed(2);
-        document.getElementById('pdf-faturamento-vendas').innerText = totalGeral.toFixed(2);
-        
-        let totalRealComTroco = totalGeral + (db.caixaInicial || 0);
-        document.getElementById('pdf-total-geral').innerText = `R$ ${totalRealComTroco.toFixed(2)}`;
-        
-        if(db.obs) { document.getElementById('pdf-obs-container').style.display = 'block'; document.getElementById('pdf-obs').innerText = db.obs; }
-        
-        document.body.classList.add('print-mode-relatorio');
-        window.print();
-        document.body.classList.remove('print-mode-relatorio');
-    }
-</script>
-</body>
-</html>
+        let totalGeral = 0
