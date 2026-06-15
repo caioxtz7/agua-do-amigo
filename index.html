@@ -2,29 +2,9 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Água do Amigo - Gestão v36</title>
+    <title>Água do Amigo - Gestão v36 (Local)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script>
-        // SUAS CHAVES REAIS DO FIREBASE
-        const firebaseConfig = {
-            apiKey: "AIzaSyAehc4FBXkMAy_w6vR9JXPkJlOGGrhhFog",
-            authDomain: "agua-do-amigo-0589.firebaseapp.com",
-            projectId: "agua-do-amigo-0589",
-            storageBucket: "agua-do-amigo-0589.firebasestorage.app",
-            messagingSenderId: "874151855337",
-            appId: "1:874151855337:web:518cbf24cbe654931e1c78",
-            measurementId: "G-W47P8VB3P6"
-        };
-        
-        // Inicialização do Banco de Dados na Nuvem
-        firebase.initializeApp(firebaseConfig);
-        const fs = firebase.firestore();
-        const docRef = fs.collection("gestao").doc("dados_agua");
-    </script>
-
     <style>
         /* --- CORES PADRÃO (MODO CLARO) --- */
         :root {
@@ -401,15 +381,24 @@
     let comanda = []; // Guarda múltiplos itens temporariamente antes de finalizar a comanda
     let dataVisualizacao = "atual"; // Controla qual dia está a ser exibido ("atual" ou uma data "DD-MM-AAAA")
 
-    // OUVINTE EM TEMPO REAL DO FIREBASE FIRESTORE
-    docRef.onSnapshot((doc) => {
-        if (doc.exists) {
-            db = doc.data();
+    // --- NOVA FUNÇÃO DE SALVAMENTO LOCAL ---
+    function salvarDados() {
+        if (!db || dataVisualizacao !== "atual") return;
+        localStorage.setItem("agua_do_amigo_db", JSON.stringify(db));
+    }
+
+    // --- INICIALIZAÇÃO LOCAL (Substitui o onSnapshot do Firebase) ---
+    document.addEventListener("DOMContentLoaded", () => {
+        const dadosSalvos = localStorage.getItem("agua_do_amigo_db");
+        
+        if (dadosSalvos) {
+            db = JSON.parse(dadosSalvos);
         } else {
             db = { produtos: [], atacado: [], entrega: [], obs: "", v_avulsa_a_q: 0, v_avulsa_a_r: 0, historico: [], temaEscuro: false, caixaInicial: 0, devedores: [], historicoDias: {} };
-            salvarNoFirebase();
+            salvarDados();
         }
 
+        // Validações de segurança para garantir que as estruturas existam
         if (!db.historico) db.historico = [];
         if (!db.devedores) db.devedores = [];
         if (!db.historicoDias) db.historicoDias = {};
@@ -417,16 +406,8 @@
         if (db.caixaInicial === undefined) db.caixaInicial = 0;
 
         aplicarTema();
-        renderizar(true); // Passa true para renderizar apenas o visual sem re-enviar dados em loop
+        renderizar(true); // Renderiza a interface na inicialização
     });
-
-    // FUNÇÃO QUE FAZ O BACKUP AUTOMÁTICO NA NUVEM
-    function salvarNoFirebase() {
-        if (!db || dataVisualizacao !== "atual") return;
-        docRef.set(db).catch((error) => {
-            console.error("Erro ao sincronizar com o Firebase: ", error);
-        });
-    }
 
     // Função interna de segurança para bloquear alterações em dados históricos passados
     function verificarLeitura() {
@@ -452,7 +433,7 @@
     function alternarTema() {
         db.temaEscuro = !db.temaEscuro;
         aplicarTema();
-        salvarNoFirebase();
+        salvarDados();
     }
 
     function aplicarTema() {
@@ -929,8 +910,6 @@
         const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `backup_agua_do_amigo.json`; a.click();
         dispararNotificacao("💾 Backup baixado!");
     }
-
-    document.addEventListener("DOMContentLoaded", () => { /* Carregado pelo onSnapshot do Firebase */ });
     
     function importarDados() {
         const input = document.createElement("input"); input.type = "file"; input.accept = ".json";
@@ -941,7 +920,7 @@
                     db = JSON.parse(ev.target.result); 
                     if(!db.historicoDias) db.historicoDias = {};
                     dataVisualizacao = "atual";
-                    salvarNoFirebase();
+                    salvarDados();
                     limparComanda(); 
                     dispararNotificacao("📂 Dados importados!"); 
                 } catch(err) { alert("Arquivo inválido."); }
@@ -951,9 +930,9 @@
         input.click();
     }
 
-    function renderizar(vindoDoFirebase = false) {
-        if (!vindoDoFirebase && dataVisualizacao === "atual") {
-            salvarNoFirebase();
+    function renderizar(vindoDoArmazenamentoLocal = false) {
+        if (!vindoDoArmazenamentoLocal && dataVisualizacao === "atual") {
+            salvarDados();
         }
         aplicarTema();
 
@@ -1168,7 +1147,7 @@
     function salvarObs() { 
         if (dataVisualizacao !== "atual") return;
         db.obs = document.getElementById('campo_obs').value; 
-        salvarNoFirebase(); 
+        salvarDados(); 
     }
     
     function salvarDevedor() {
