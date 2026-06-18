@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel do Chefe - Água do Amigo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: system-ui, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #007bff; text-align: center; font-size: 24px; }
+        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #f8f9fa; }
+        .total { font-size: 24px; color: #28a745; font-weight: bold; margin: 10px 0; }
+        .data-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #007bff; padding-bottom: 5px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>📊 Relatórios de Fechamento</h1>
+        <p style="text-align: center; color: #666;">Acompanhamento diário das vendas</p>
+        
+        <div id="lista-fechamentos">
+            <p style="text-align: center;">Buscando dados na nuvem...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+        import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+
+        const firebaseConfig = {
+            projectId: "agua-do-amigo-cc",
+            databaseURL: "https://agua-do-amigo-cc-default-rtdb.firebaseio.com/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const dbRef = ref(getDatabase(app));
+
+        async function carregarDados() {
+            const lista = document.getElementById('lista-fechamentos');
+            try {
+                const snapshot = await get(child(dbRef, `fechamentos`));
+                lista.innerHTML = ''; 
+
+                if (!snapshot.exists()) {
+                    lista.innerHTML = '<p style="text-align:center;">Nenhum fechamento registrado ainda. Aguardando o fim do expediente!</p>';
+                    return;
+                }
+
+                const todosFechamentos = snapshot.val();
+                const chaves = Object.keys(todosFechamentos).reverse(); // Mais recente primeiro
+
+                chaves.forEach((chave) => {
+                    const dados = todosFechamentos[chave];
+                    lista.innerHTML += `
+                        <div class="card">
+                            <div class="data-header">
+                                <strong>📅 Dia: ${dados.data}</strong>
+                                <span style="font-size: 12px; color: #888;">Enviado às ${dados.horaEnvio}</span>
+                            </div>
+                            <p style="margin: 5px 0;">Fundo de Caixa: R$ ${dados.caixaInicial}</p>
+                            <div class="total">Total do Caixa: ${dados.totalNoCaixa}</div>
+                            <p style="margin: 5px 0; font-size: 14px;"><strong>📝 Observações:</strong> <br> ${dados.observacoes.replace(/\n/g, '<br>')}</p>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error("Erro ao buscar dados:", error);
+                lista.innerHTML = '<p style="color:red; text-align:center;">Erro ao carregar dados. Verifique a configuração.</p>';
+            }
+        }
+
+        carregarDados();
+    </script>
+</body>
+</html>
