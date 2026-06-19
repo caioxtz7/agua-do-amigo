@@ -24,9 +24,9 @@
         </div>
     </div>
 
-    <script type="module">
+  <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-        import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
 
         const firebaseConfig = {
             projectId: "agua-do-amigo-cc",
@@ -34,16 +34,104 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const dbRef = ref(getDatabase(app));
+        const database = getDatabase(app);
 
         async function carregarDados() {
             const lista = document.getElementById('lista-fechamentos');
+            lista.innerHTML = '<p style="text-align:center; color:#666;">⏳ A carregar dados da nuvem...</p>';
+
             try {
-                const snapshot = await get(child(dbRef, `fechamentos`));
-                lista.innerHTML = ''; 
+                const snapshot = await get(ref(database, 'fechamentos'));
+                if (!snapshot.exists()) {
+                    lista.innerHTML = '<p style="color:#888; text-align:center;">Nenhum fechamento registrado ainda. Aguardando o fim do expediente!</p>';
+                    return;
+                }
+
+                const todosFechamentos = snapshot.val();
+                const chaves = Object.keys(todosFechamentos).reverse(); // Mais recente primeiro
+                lista.innerHTML = '';
+
+                chaves.forEach((chave) => {
+                    const dados = todosFechamentos[chave];
+
+                    // 1. Monta a tabela de resumo de produtos se ela existir nos dados enviados
+                    let tabelaProdutosHtml = '';
+                    if (dados.resumoProdutos && Array.isArray(dados.resumoProdutos)) {
+                        tabelaProdutosHtml = `
+                            <div style="margin-top: 12px;">
+                                <strong style="font-size: 14px; color: #007bff;">📦 Resumo de Vendas por Produto:</strong>
+                                <table style="width:100%; border-collapse:collapse; margin-top:5px; font-size:13px;">
+                                    <thead>
+                                        <tr style="background:#e7f1ff; text-align:left;">
+                                            <th style="padding:6px; border:1px solid #ddd;">Produto</th>
+                                            <th style="padding:6px; border:1px solid #ddd; text-align:center;">Balcão</th>
+                                            <th style="padding:6px; border:1px solid #ddd; text-align:center;">Entrega</th>
+                                            <th style="padding:6px; border:1px solid #ddd; text-align:center;">Atacado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+                        
+                        dados.resumoProdutos.forEach(p => {
+                            tabelaProdutosHtml += `
+                                <tr>
+                                    <td style="padding:6px; border:1px solid #ddd;">${p.nome}</td>
+                                    <td style="padding:6px; border:1px solid #ddd; text-align:center;">${p.balcao}</td>
+                                    <td style="padding:6px; border:1px solid #ddd; text-align:center;">${p.entrega}</td>
+                                    <td style="padding:6px; border:1px solid #ddd; text-align:center;">${p.atacado}</td>
+                                </tr>
+                            `;
+                        });
+
+                        tabelaProdutosHtml += `</tbody></table></div>`;
+                    }
+
+                    // 2. Monta o indicador de Fiado na rua se existir
+                    let fiadoHtml = dados.totalFiado ? `
+                        <p style="margin: 8px 0; color: #dc3545; font-size: 14px;">
+                            <strong>💰 Fiado Acumulado na Rua:</strong> R$ ${dados.totalFiado}
+                        </p>
+                    ` : '';
+
+                    // 3. Renderiza o Card Completo para o Chefe
+                    lista.innerHTML += `
+                        <div class="card">
+                            <div class="data-header">
+                                <strong>📅 Dia: ${dados.data}</strong>
+                                <span style="font-size: 12px; color: #888;">Enviado às ${dados.horaEnvio}</span>
+                            </div>
+                            <p style="margin: 5px 0; font-size: 14px;"><strong>🔑 Fundo de Caixa (Abertura):</strong> R$ ${dados.caixaInicial}</p>
+                            <div class="total">Total do Caixa: ${dados.totalNoCaixa}</div>
+                            ${fiadoHtml}
+                            ${tabelaProdutosHtml}
+                            <p style="margin: 12px 0 5px 0; font-size: 14px; background:#fff; padding:8px; border-radius:6px; border:1px solid #eee;">
+                                <strong>📝 Observações:</strong> <br> ${(dados.observacoes || "Nenhuma").replace(/\n/g, '<br>')}
+                            </p>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error("Erro ao buscar dados:", error);
+                lista.innerHTML = '<p style="color:red; text-align:center;">Erro ao carregar dados. Verifique a configuração.</p>';
+            }
+        }
+
+        carregarDados();
+    </script>
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        async function carregarDados() {
+            const lista = document.getElementById('lista-fechamentos');
+            lista.innerHTML = '<p style="text-align: center;">A carregar dados da nuvem...</p>';
+
+            try {
+                const dbRef = ref(database);
+                const snapshot = await get(child(dbRef, 'fechamentos'));
 
                 if (!snapshot.exists()) {
-                    lista.innerHTML = '<p style="text-align:center;">Nenhum fechamento registrado ainda. Aguardando o fim do expediente!</p>';
+                    lista.innerHTML = '<p style="color:#888; text-align:center;">Nenhum fechamento registrado ainda. Aguardando o fim do expediente!</p>';
                     return;
                 }
 
@@ -52,15 +140,59 @@
 
                 chaves.forEach((chave) => {
                     const dados = todosFechamentos[chave];
+                    
+                    // Cria o detalhamento de produtos se as informações existirem
+                    let tabelaProdutosHtml = '';
+                    if (dados.resumoProdutos && Array.isArray(dados.resumoProdutos)) {
+                        tabelaProdutosHtml = `
+                            <div style="margin-top: 12px;">
+                                <strong style="font-size: 14px; color: #007bff;">📦 Quantidades Vendidas:</strong>
+                                <table style="width:100%; border-collapse:collapse; margin-top:5px; font-size:13px; background:#fff;">
+                                    <thead>
+                                        <tr style="background:#e7f1ff; text-align:left;">
+                                            <th style="padding:6px; border:1px solid #ddd;">Produto</th>
+                                            <th style="padding:6px; border:1px solid #ddd; text-align:center;">Balcão</th>
+                                            <th style="padding:6px; border:1px solid #ddd; text-align:center;">Entrega</th>
+                                            <th style="padding:6px; border:1px solid #ddd; text-align:center;">Atacado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+                        
+                        dados.resumoProdutos.forEach(p => {
+                            tabelaProdutosHtml += `
+                                <tr>
+                                    <td style="padding:6px; border:1px solid #ddd;"><b>${p.nome}</b></td>
+                                    <td style="padding:6px; border:1px solid #ddd; text-align:center;">${p.balcao || 0}</td>
+                                    <td style="padding:6px; border:1px solid #ddd; text-align:center;">${p.entrega || 0}</td>
+                                    <td style="padding:6px; border:1px solid #ddd; text-align:center;">${p.atacado || 0}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        tabelaProdutosHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    }
+
+                    // Se existir o campo totalFiado, gera a linha correspondente
+                    let fiadoHtml = dados.totalFiado ? `<p style="margin: 5px 0; color: #dc3545; font-size: 14px;"><strong>💰 Fiado Acumulado na Rua:</strong> R$ ${dados.totalFiado}</p>` : '';
+
                     lista.innerHTML += `
                         <div class="card">
                             <div class="data-header">
                                 <strong>📅 Dia: ${dados.data}</strong>
                                 <span style="font-size: 12px; color: #888;">Enviado às ${dados.horaEnvio}</span>
                             </div>
-                            <p style="margin: 5px 0;">Fundo de Caixa: R$ ${dados.caixaInicial}</p>
+                            <p style="margin: 5px 0; font-size: 14px;"><strong>🔑 Fundo de Caixa (Abertura):</strong> R$ ${dados.caixaInicial}</p>
                             <div class="total">Total do Caixa: ${dados.totalNoCaixa}</div>
-                            <p style="margin: 5px 0; font-size: 14px;"><strong>📝 Observações:</strong> <br> ${dados.observacoes.replace(/\n/g, '<br>')}</p>
+                            ${fiadoHtml}
+                            ${tabelaProdutosHtml}
+                            <p style="margin: 12px 0 5px 0; font-size: 14px; background:#fff; padding:8px; border-radius:6px; border:1px solid #eee;">
+                                <strong>📝 Observações:</strong> <br> ${dados.observacoes.replace(/\n/g, '<br>')}
+                            </p>
                         </div>
                     `;
                 });
